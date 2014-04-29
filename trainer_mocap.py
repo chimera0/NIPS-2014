@@ -21,9 +21,9 @@ class trainer:
         for param,value in self.state.iteritems():
             print '%s: %s'%(param,value)
         print '********************'
-        self.model = RNN_RNADE(self.n_visible,self.n_hidden,self.n_recurrent,self.n_components,hidden_act=self.hidden_act)
+        self.model = RNN_RNADE(self.n_visible,self.n_hidden,self.n_recurrent,self.n_components,hidden_act=self.hidden_act,l2=self.l2)
         self.model.build_RNN_RNADE()
-        self.optmiser = SGD_mocap(self.model.params,[self.model.v],self.model.cost,momentum=self.momentum,patience=self.patience)
+        self.optmiser = SGD_mocap(self.model.params,[self.model.v],[self.model.cost],momentum=self.momentum,patience=self.patience)
 
     def train(self,):
         pdb.set_trace()

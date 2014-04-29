@@ -6,6 +6,7 @@ def get_state():
 	state['n_recurrent'] = 100
 	state['n_components'] = 2
 	state['hidden_act'] = 'ReLU'#'sigmoid'
+	state['l2'] = 2.
 	#misc parameters
 	state['save'] = True
 	state['load'] = False

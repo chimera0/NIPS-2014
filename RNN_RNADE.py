@@ -11,6 +11,7 @@ import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 from model import Model
 import pdb
+from RNADE import RNADE
 
 def shared_normal(shape, scale=1,name=None):
     '''Initialize a matrix shared variable with normally distributed
@@ -38,7 +39,7 @@ def log_sum_exp(x, axis=1):
 floatX = theano.config.floatX
 
 class RNN_RNADE(Model):
-    def __init__(self,n_visible,n_hidden,n_recurrent,n_components,hidden_act='ReLU',):
+    def __init__(self,n_visible,n_hidden,n_recurrent,n_components,hidden_act='ReLU',l2=1.):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
         self.n_recurrent = n_recurrent
@@ -64,7 +65,7 @@ class RNN_RNADE(Model):
         self.Wu_Vmu = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vmu')
         self.Wu_Vsigma = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vsigma')
         self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling,self.Wuu,
-                       self.bu]
+                       self.bu,self.Wu_balpha,self.Wu_bmu,self.Wu_bsigma]
         #input sequence
         self.v = T.matrix('v')
         self.hidden_act = hidden_act
@@ -118,10 +119,14 @@ class RNN_RNADE(Model):
     def build_RNN_RNADE(self,):
         (u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
         self.probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
-        self.cost = T.mean(self.probs)#self.probs.sum(axis=0)/self.probs.shape[0]
+        self.cost = T.mean(self.probs) + self.l2*T.sum(self.W)#self.probs.sum(axis=0)/self.probs.shape[0]
         gparams = T.grad(self.cost,self.params)
-        pdb.set_trace()
-        self.test_func = theano.function([self.v],probs)
+
+    def init_RNADE(self,):
+        rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=self.l2)
+        rnade.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling]
+        
+
 
 if __name__ == '__main__':
     n_visible = 10

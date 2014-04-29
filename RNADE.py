@@ -34,7 +34,7 @@ def log_sum_exp(x, axis=1):
 floatX = theano.config.floatX
 
 class RNADE:
-    def __init__(self,n_visible,n_hidden,n_components,hidden_act='RLU'):
+    def __init__(self,n_visible,n_hidden,n_components,hidden_act='RLU',l2=0.):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
         self.n_components = n_components
@@ -46,8 +46,9 @@ class RNADE:
         self.b_sigma = shared_normal((n_visible,n_components),0.01,'b_sigma')
         self.V_sigma = shared_normal((n_visible,n_hidden,n_components),0.01,'V_sigma')
         self.activation_rescaling = shared_normal((n_visible),0.01,'activation_rescaling')
-        self.params = self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling
+        self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling]
         self.hidden_act = hidden_act
+        self.l2 = l2
         if self.hidden_act == 'sigmoid':
             self.nonlinearity = T.nnet.sigmoid
         elif self.hidden_act == 'RLU':
@@ -79,7 +80,7 @@ class RNADE:
 
     def build_fprop(self,):
         self.ps,updates = self.sym_logdensity(self.v.T)
-        self.cost = -T.mean(self.ps,axis=0) + 2. * T.sum(self.W**2)
+        self.cost = -T.mean(self.ps,axis=0) + self.l2*T.sum(self.W**2)
         self.fprop = theano.function([self.v],self.ps)
 
     def sym_gradients_new(self, X):
@@ -172,7 +173,6 @@ class RNADE:
     def build_gradients(self,):
         grad_probs,grad_updates,update = self.sym_gradients_new(self.v.T)
         proper_updates = OrderedDict()
-        pdb.set_trace()
         for param in self.params:
             proper_updates[param] = param - 0.1 * grad_updates[param.name]
         self.test = theano.function([self.v],grad_probs,updates=proper_updates)
