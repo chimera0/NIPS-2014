@@ -10,12 +10,11 @@ import theano
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 from model import Model
-import pdb
 from RNADE import RNADE
 from datasets import Dataset
 import mocap_data
 from SGD import SGD_Optimiser
-
+import pdb
 
 def shared_normal(shape, scale=1,name=None):
     '''Initialize a matrix shared variable with normally distributed
@@ -43,7 +42,8 @@ def log_sum_exp(x, axis=1):
 floatX = theano.config.floatX
 
 class RNN_RNADE(Model):
-    def __init__(self,n_visible,n_hidden,n_recurrent,n_components,hidden_act='ReLU',l2=1.):
+    def __init__(self,n_visible,n_hidden,n_recurrent,n_components,hidden_act='ReLU',
+                 l2=1.,rec_sigma=True,rec_mu=True,rec_mix=True,load=False,load_dir=None):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
         self.n_recurrent = n_recurrent
@@ -62,7 +62,7 @@ class RNN_RNADE(Model):
         self.Wvu = shared_normal((n_visible, n_recurrent), 0.0001,'Wvu')
         self.bu = shared_zeros((n_recurrent),'bu')
         self.u0 = shared_zeros((n_recurrent),'u0')
-        #RNN-RNADE params
+        #RNN-RNADE params, not all of them are used.
         self.Wu_balpha = shared_normal((n_recurrent,n_visible*n_components),0.01,'Wu_balpha')
         self.Wu_bmu = shared_normal((n_recurrent,n_visible*n_components),0.01,'Wu_bmu')
         self.Wu_bsigma = shared_normal((n_recurrent,n_visible*n_components),0.01,'Wu_bsigma')
@@ -70,7 +70,18 @@ class RNN_RNADE(Model):
         self.Wu_Vmu = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vmu')
         self.Wu_Vsigma = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vsigma')
         self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling,self.Wuu,
-                       self.bu,self.Wu_balpha,self.Wu_bmu,self.Wu_bsigma]
+                       self.bu]#,self.Wu_balpha,self.Wu_bmu,self.Wu_bsigma]
+        #params to decide the architecture
+        self.rec_sigma = rec_sigma
+        self.rec_mu = rec_mu
+        self.rec_mix = rec_mix
+        if rec_sigma:
+            self.params.append(self.Wu_bsigma)
+        if rec_mu:
+            self.params.append(self.Wu_bmu)
+        if rec_mix:
+            self.params.append(self.Wu_balpha)
+
         self.params_dict = {}
         for param in self.params:
             self.params_dict[param.name] = param
@@ -82,6 +93,11 @@ class RNN_RNADE(Model):
             self.nonlinearity = T.nnet.sigmoid
         elif self.hidden_act == 'ReLU':
             self.nonlinearity = lambda x:T.maximum(x,0.)
+        #Parameters for loading
+        self.load = load
+        self.load_dir = load_dir
+        if self.load:
+            self.load_model(self.load_dir)
 
     def rnade_sym(self,x,W,V_alpha,b_alpha,V_mu,b_mu,V_sigma,b_sigma,activation_rescaling):
         """ x is a matrix of column datapoints (VxB) V = n_visible, B = batch size """
@@ -107,11 +123,20 @@ class RNN_RNADE(Model):
                                                 outputs_info=[p0, a0, x0])
         return (ps[-1], updates)
 
-    def recurrence(self,v_t,u_tm1):
+    def rnn_recurrence(self,v_t,u_tm1):
         #Flattening the array so that dot product is easier. 
-        b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
-        b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
-        b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
+        if self.rec_mix:
+            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
+        else:
+            b_alpha_t = self.b_alpha.flatten(ndim=1)
+        if self.rec_mu:
+            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
+        else:
+            b_mu_t = self.b_mu.flatten(ndim=1)
+        if self.rec_sigma:
+            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
+        else:
+            b_sigma_t = self.b_sigma.flatten(ndim=1)
         u_t = T.tanh(self.bu + T.dot(v_t,self.Wvu)) + T.dot(u_tm1,self.Wuu)
         return u_t,b_alpha_t,b_mu_t,b_sigma_t
 
@@ -125,10 +150,11 @@ class RNN_RNADE(Model):
         return prob
     
     def build_RNN_RNADE(self,):
-        (u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
-        self.probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
-        self.cost = T.mean(self.probs) + self.l2*T.sum(self.W)#self.probs.sum(axis=0)/self.probs.shape[0]
-        gparams = T.grad(self.cost,self.params)
+        (u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
+        self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
+        self.cost = -T.mean(self.log_probs) + self.l2*T.sum(self.W**2) #negative sign for the log-probabilities
+        self.log_cost = T.mean(self.log_probs)
+        self.l2_cost = T.sum(self.W)
 
     def init_RNADE(self,):
         pdb.set_trace()
@@ -149,14 +175,15 @@ class RNN_RNADE(Model):
             self.params_dict[param.name].set_value(value)
         
 if __name__ == '__main__':
-    n_visible = 10
-    n_hidden = 20
+    n_visible = 49
+    n_hidden = 50
     n_recurrent = 30
     n_components = 2
     test = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components)
     test.build_RNN_RNADE()
-    test.init_RNADE()
-    
+    #test.init_RNADE()
+    #test_sequence = numpy.random.random((100,49))
+    #test_func = theano.function([test.v],test.probs)
     #input_sequence = []
     #for i in xrange(100):
     #    input_sequence.append(numpy.random.random(10))

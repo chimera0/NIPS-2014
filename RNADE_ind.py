@@ -18,5 +18,5 @@ for i in xrange(1,num_examples):
 numpy.random.shuffle(train_data)
 train_dataset = Dataset([train_data],100)
 optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost],momentum=True,patience=500)
-optimiser.train(train_dataset,valid_set=None,learning_rate=0.001,num_epochs=1000,save=False,
+optimiser.train(train_dataset,valid_set=None,learning_rate=0.01,num_epochs=1000,save=False,
             lr_update=True,update_type='linear',start=2)

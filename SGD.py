@@ -17,7 +17,7 @@ import pdb
 class SGD_Optimiser:
     def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20):
         """
-        params: parameters of the model
+        params: list containing the parameters of the model
         inputs: list of symbolic inputs to the graph
         costs: list of costs to be evaluated. The first element MUST be the objective.
         updates_old: OrderedDict from previous graphs that need to be accounted for by SGD, typically when scan is used.
@@ -94,6 +94,10 @@ class SGD_Optimiser:
                         inputs = inputs + [self.mom_rate]
                     cost.append(self.f(*inputs))
                 mean_costs = numpy.mean(cost,axis=0)
+                if numpy.isnan(mean_costs[0]):
+                    print 'Training cost is NaN.'
+                    print 'Breaking from training early, the last saved set of parameters is still usable!'
+                    break
                 print '  Epoch %i   ' %(u+1)
                 print '***Train Results***'
                 for i in xrange(self.num_costs):
@@ -115,7 +119,7 @@ class SGD_Optimiser:
                     break
 
                 if lr_update:
-                    self.update_lr(u+1,update_type='linear',start=self.start)
+                    self.update_lr(u+1,update_type='linear',start=self.start,num_iterations=self.num_epochs)
             print 'Training completed!'
 
         except KeyboardInterrupt: 
@@ -156,7 +160,7 @@ class SGD_Optimiser:
             cPickle.dump(best_params,open(save_path,'w'))
 
 
-    def update_lr(self,count,update_type='annealed',begin_anneal=500.,min_lr=0.01,decay_factor=1.2,start=2):
+    def update_lr(self,count,update_type='annealed',begin_anneal=500.,min_lr=0.01,decay_factor=1.2,start=2,num_iterations=1000):
         if update_type=='annealed':
             scale_factor = float(begin_anneal)/count
             self.lr = self.init_lr*min(1.,scale_factor)
@@ -167,7 +171,7 @@ class SGD_Optimiser:
             else:
                 self.lr = new_lr
         elif update_type == 'linear':
-            slope = self.init_lr/(self.num_epochs - start)
+            slope = self.init_lr/(num_iterations - start)
             if count >= start:
                 self.lr = self.init_lr - count * slope
                 print count

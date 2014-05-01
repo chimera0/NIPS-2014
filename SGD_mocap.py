@@ -5,6 +5,7 @@ import theano
 import theano.tensor as T
 from SGD import SGD_Optimiser
 import mocap_data
+import pdb
 
 class SGD_mocap(SGD_Optimiser):
     def train(self,valid_set=False,learning_rate=0.1,num_updates=500,save=False,output_folder=None,lr_update=None,
@@ -28,11 +29,15 @@ class SGD_mocap(SGD_Optimiser):
             cost = []
             for u in xrange(num_updates):
                 batch_data = mocap_data.sample_train_seq(self.batch_size) #Ensure this is a list in the desired form. 
-                inputs = i + [self.lr]
+                inputs = [list(batch_data)] + [self.lr]
                 if self.momentum:
                     inputs = inputs + [self.mom_rate]
                 cost.append(self.f(*inputs))
                 mean_costs = numpy.mean(cost,axis=0)
+                if numpy.isnan(mean_costs[0]):
+                    print 'Training cost is NaN.'
+                    print 'Breaking from training early, the last saved set of parameters is still usable!'
+                    break
                 print '  Update %i   ' %(u+1)
                 print '***Train Results***'
                 for i in xrange(self.num_costs):
@@ -54,7 +59,7 @@ class SGD_mocap(SGD_Optimiser):
                     break
 
                 if lr_update:
-                    self.update_lr(u+1,update_type=self.update_type,start=self.start)
+                    self.update_lr(u+1,update_type=self.update_type,start=self.start,num_iterations=self.num_updates)
             print 'Training completed!'
 
         except KeyboardInterrupt: 
