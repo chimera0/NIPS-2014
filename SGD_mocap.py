@@ -8,21 +8,22 @@ import mocap_data
 
 class SGD_mocap(SGD_Optimiser):
     def train(self,valid_set=False,learning_rate=0.1,num_updates=500,save=False,output_folder=None,lr_update=None,
-              mom_rate=0.9,update_type='linear',start=2):
+              mom_rate=0.9,update_type='linear',start=2,batch_size=100):
         self.best_cost = numpy.inf
         self.init_lr = learning_rate
         self.lr = numpy.array(learning_rate)
         self.mom_rate = mom_rate
         self.output_folder = output_folder
-        self.train_set = train_set
         self.valid_set = valid_set
         self.save = save
         self.lr_update = lr_update
         self.stop_train = False
         self.train_costs = []
         self.valid_costs = []
-        self.num_epochs = num_epochs
+        self.num_updates = num_updates
         self.batch_size = batch_size
+        self.update_type = update_type
+        self.start = start
         try:
             cost = []
             for u in xrange(num_updates):
@@ -53,7 +54,7 @@ class SGD_mocap(SGD_Optimiser):
                     break
 
                 if lr_update:
-                    self.update_lr(u+1,update_type='linear',start=2)
+                    self.update_lr(u+1,update_type=self.update_type,start=self.start)
             print 'Training completed!'
 
         except KeyboardInterrupt: 

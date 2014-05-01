@@ -28,7 +28,7 @@ class trainer:
     def train(self,):
         pdb.set_trace()
         self.optmiser.train(learning_rate=self.learning_rate,num_updates=self.num_updates,save=self.save,output_folder=self.output_folder,
-                            lr_update=self.lr_update,update_type=self.update_type,mom_rate=self.mom_rate,start=self.start)
+                            lr_update=self.lr_update,update_type=self.update_type,mom_rate=self.mom_rate,start=self.start,batch_size=self.batch_size)
 
 if __name__ == '__main__':
     state = get_state()

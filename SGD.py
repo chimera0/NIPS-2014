@@ -69,7 +69,7 @@ class SGD_Optimiser:
         self.f = theano.function(self.grad_inputs, self.costs, updates=self.updates_old)
 
     def train(self,train_set,valid_set=None,learning_rate=0.1,num_epochs=500,save=False,output_folder=None,lr_update=None,
-              mom_rate=0.9,update_type='annealed',begin_anneal=50):
+              mom_rate=0.9,update_type='annealed',begin_anneal=50,start=2):
         print 'Initializing training.'
         self.best_cost = numpy.inf
         self.init_lr = learning_rate
@@ -84,6 +84,7 @@ class SGD_Optimiser:
         self.train_costs = []
         self.valid_costs = []
         self.num_epochs = num_epochs
+        self.start = start - 1 #subtracting one for zero index. 
         try:
             for u in xrange(num_epochs):
                 cost = []
@@ -114,7 +115,7 @@ class SGD_Optimiser:
                     break
 
                 if lr_update:
-                    self.update_lr(u+1,update_type='linear',start=2)
+                    self.update_lr(u+1,update_type='linear',start=self.start)
             print 'Training completed!'
 
         except KeyboardInterrupt: 
@@ -166,6 +167,8 @@ class SGD_Optimiser:
             else:
                 self.lr = new_lr
         elif update_type == 'linear':
+            slope = self.init_lr/(self.num_epochs - start)
             if count >= start:
-                slope = self.init_lr/(self.num_epochs - start)
-                self.lr = self.lr - count * slope
+                self.lr = self.init_lr - count * slope
+                print count
+                print self.lr

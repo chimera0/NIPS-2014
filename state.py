@@ -21,4 +21,5 @@ def get_state():
 	state['patience'] = 20
 	state['learning_rate'] = 0.1
 	state['num_updates'] = 100000
+	state['start'] = 2 #Iteration at which the lr update should start
 	return state

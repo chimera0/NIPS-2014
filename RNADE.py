@@ -34,7 +34,7 @@ def log_sum_exp(x, axis=1):
 floatX = theano.config.floatX
 
 class RNADE:
-    def __init__(self,n_visible,n_hidden,n_components,hidden_act='RLU',l2=0.):
+    def __init__(self,n_visible,n_hidden,n_components,hidden_act='ReLU',l2=0.):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
         self.n_components = n_components
@@ -51,7 +51,7 @@ class RNADE:
         self.l2 = l2
         if self.hidden_act == 'sigmoid':
             self.nonlinearity = T.nnet.sigmoid
-        elif self.hidden_act == 'RLU':
+        elif self.hidden_act == 'ReLU':
             self.nonlinearity = lambda x:T.maximum(x,0.)
         self.v = T.matrix('v')
         self.build_fprop()

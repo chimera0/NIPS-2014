@@ -12,6 +12,10 @@ from theano.tensor.shared_randomstreams import RandomStreams
 from model import Model
 import pdb
 from RNADE import RNADE
+from datasets import Dataset
+import mocap_data
+from SGD import SGD_Optimiser
+
 
 def shared_normal(shape, scale=1,name=None):
     '''Initialize a matrix shared variable with normally distributed
@@ -43,6 +47,7 @@ class RNN_RNADE(Model):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
         self.n_recurrent = n_recurrent
+        self.n_components = n_components
         #RNADE params
         self.W = shared_normal((n_visible, n_hidden), 0.01,'W')
         self.b_alpha = shared_normal((n_visible,n_components),0.01,'b_alpha')
@@ -66,6 +71,10 @@ class RNN_RNADE(Model):
         self.Wu_Vsigma = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vsigma')
         self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling,self.Wuu,
                        self.bu,self.Wu_balpha,self.Wu_bmu,self.Wu_bsigma]
+        self.params_dict = {}
+        for param in self.params:
+            self.params_dict[param.name] = param
+        self.l2 = l2
         #input sequence
         self.v = T.matrix('v')
         self.hidden_act = hidden_act
@@ -111,8 +120,7 @@ class RNN_RNADE(Model):
         b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
         b_mu_t = b_mu_t.reshape(self.b_mu.shape)
         b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
-        inp = T.shape_padright(x) #Padding the input, it should be (V X 1), I think by default the shape afer scan is (V,) which causes 
-                                  #issues with broadcasting and accumulating the results. 
+        inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
         prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
         return prob
     
@@ -123,11 +131,23 @@ class RNN_RNADE(Model):
         gparams = T.grad(self.cost,self.params)
 
     def init_RNADE(self,):
+        pdb.set_trace()
         rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=self.l2)
-        rnade.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling]
+        #rnade.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling]
+        batch_size = 100
+        num_examples = 100
+        train_data = mocap_data.sample_train_seq(batch_size)
+        for i in xrange(1,num_examples):
+            train_data = numpy.vstack((train_data,mocap_data.sample_train_seq(batch_size)))
+        numpy.random.shuffle(train_data)
+        train_dataset = Dataset([train_data],100)
+        optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost],momentum=True,patience=500)
+        optimiser.train(train_dataset,valid_set=None,learning_rate=0.001,num_epochs=1000,save=False,
+                    lr_update=True,update_type='linear',start=2)
+        for param in rnade.params:
+            value = param.get_value()
+            self.params_dict[param.name].set_value(value)
         
-
-
 if __name__ == '__main__':
     n_visible = 10
     n_hidden = 20
@@ -135,10 +155,12 @@ if __name__ == '__main__':
     n_components = 2
     test = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components)
     test.build_RNN_RNADE()
-    input_sequence = []
-    for i in xrange(100):
-        input_sequence.append(numpy.random.random(10))
+    test.init_RNADE()
+    
+    #input_sequence = []
+    #for i in xrange(100):
+    #    input_sequence.append(numpy.random.random(10))
 
-    probs= test.test_func(input_sequence)
-    pdb.set_trace()
+    #probs= test.test_func(input_sequence)
+    #pdb.set_trace()
     
