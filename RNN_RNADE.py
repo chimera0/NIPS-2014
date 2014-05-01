@@ -154,7 +154,7 @@ class RNN_RNADE(Model):
         self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
         self.cost = -T.mean(self.log_probs) + self.l2*T.sum(self.W**2) #negative sign for the log-probabilities
         self.log_cost = T.mean(self.log_probs)
-        self.l2_cost = T.sum(self.W)
+        self.l2_cost = T.sum(self.W**2)
 
     def init_RNADE(self,):
         pdb.set_trace()

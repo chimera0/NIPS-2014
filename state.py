@@ -19,7 +19,7 @@ def get_state():
 	state['momentum'] = True
 	state['mom_rate'] = 0.9
 	state['patience'] = 20
-	state['learning_rate'] = 0.01
+	state['learning_rate'] = 0.001
 	state['num_updates'] = 100000
 	state['start'] = 2 #Iteration at which the lr update should start
 	state['pre_train'] = False
