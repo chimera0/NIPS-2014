@@ -56,5 +56,5 @@ class trainer:
 if __name__ == '__main__':
     state = get_state()
     trainer_exp = trainer(state)
-    #trainer_exp.train()
+    trainer_exp.train()
     trainer_exp.test()
