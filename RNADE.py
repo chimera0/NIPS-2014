@@ -43,18 +43,24 @@ class RNADE:
         self.V_alpha = shared_normal((n_visible,n_hidden,n_components),0.01,'V_alpha')
         self.b_mu = shared_normal((n_visible,n_components),0.01,'b_mu')
         self.V_mu = shared_normal((n_visible,n_hidden,n_components),0.01,'V_mu')
+        #from Benigno's implemenation
         self.b_sigma = shared_normal((n_visible,n_components),0.01,'b_sigma')
+        self.b_sigma.set_value(self.b_sigma.get_value() + 1.0)
         self.V_sigma = shared_normal((n_visible,n_hidden,n_components),0.01,'V_sigma')
-        self.activation_rescaling = shared_normal((n_visible),0.01,'activation_rescaling')
+        #Initialising activation rescaling to all 1s. 
+        self.activation_rescaling = shared_zeros((n_visible,),'activation_rescaling')
+        self.activation_rescaling.set_value(self.activation_rescaling.get_value() + 1.0)
         self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling]
         self.hidden_act = hidden_act
         self.l2 = l2
         if self.hidden_act == 'sigmoid':
             self.nonlinearity = T.nnet.sigmoid
         elif self.hidden_act == 'ReLU':
-            self.nonlinearity = lambda x:T.maximum(x,0.)
+            #self.nonlinearity = lambda x:T.maximum(x,0.)
+            self.nonlinearity = lambda x: x * (x > 0)
         self.v = T.matrix('v')
-        self.build_fprop()
+        #self.build_fprop()
+        #self.build_fprop_two()
         #self.build_gradients()
         #self.build_cost()
     
@@ -79,9 +85,16 @@ class RNADE:
         return (ps[-1], updates)
 
     def build_fprop(self,):
+        print 'Using theano grads.'
         self.ps,updates = self.sym_logdensity(self.v.T)
-        self.cost = -T.mean(self.ps,axis=0) + self.l2*T.sum(self.W**2)
-        self.fprop = theano.function([self.v],self.ps)
+        self.cost = -T.mean(self.ps,axis=0) + 0.001*T.sum(self.W**2)
+        #self.fprop = theano.function([self.v],self.ps)
+
+    def build_fprop_two(self,):
+        print 'Using custom grads.'
+        self.ps,self.grads,updats = self.sym_gradients_new(self.v.T)
+        self.cost = T.mean(self.ps,axis=0) + 0.001*T.sum(self.W**2)#no negative sign! 
+        #self.fprop = theano.function([self.v],self.ps)
 
     def sym_gradients_new(self, X):
         #non_linearity_name = self.parameters["nonlinearity"].get_name()
@@ -138,7 +151,7 @@ class RNADE:
             dp_dh = T.dot(dp_dz_alpha, V_alpha.T) + T.dot(dp_dz_mu, V_mu.T) + T.dot(dp_dz_sigma, V_sigma.T)  # BxH
             if self.hidden_act == "sigmoid":
                 dp_dpot = dp_dh * h * (1 - h)
-            elif self.hidden_act == "RLU":
+            elif self.hidden_act == "ReLU":
                 dp_dpot = dp_dh * (pot > 0)
 
             gfact = (dp_dpot * a_i).sum(1).mean(0, dtype=floatX)  # 1

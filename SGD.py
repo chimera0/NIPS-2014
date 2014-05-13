@@ -12,10 +12,12 @@ import os
 from theano.compat.python2x import OrderedDict
 import copy
 import pdb
-
+import matplotlib
+matplotlib.use('Agg')
+from pylab import *
 
 class SGD_Optimiser:
-    def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20):
+    def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20,custom_grads=False,custom_grad_dict=None):
         """
         params: list containing the parameters of the model
         inputs: list of symbolic inputs to the graph
@@ -34,6 +36,8 @@ class SGD_Optimiser:
                 param_init = theano.shared(value=numpy.zeros(param.get_value().shape,dtype=theano.config.floatX),)
                 self.params_mom.append(param_init)
         self.costs = costs 
+        self.custom_grads = custom_grads
+        self.custom_grad_dict = custom_grad_dict
         self.num_costs = len(costs)
         assert (isinstance(costs,list)), "The costs given to the SGD class must be a list, even for one element."
         self.updates_old = updates_old
@@ -46,8 +50,13 @@ class SGD_Optimiser:
         if self.momentum:
             self.mom_theano = T.scalar('mom')
             self.grad_inputs = self.grad_inputs + [self.mom_theano]
-        
-        self.gparams = T.grad(self.costs[0],self.params,consider_constant=self.consider_constant)
+        if self.custom_grads:
+            self.gparams = []
+            for param in self.params:
+                self.gparams.append(self.custom_grad_dict[param.name])
+        else:
+            self.gparams = T.grad(self.costs[0],self.params,consider_constant=self.consider_constant)
+    
         if not self.momentum:
             print 'Building SGD optimization graph without momentum'
             updates = OrderedDict((i, i - self.lr_theano*j) for i, j in zip(self.params, self.gparams))
@@ -68,8 +77,8 @@ class SGD_Optimiser:
 
         self.f = theano.function(self.grad_inputs, self.costs, updates=self.updates_old)
 
-    def train(self,train_set,valid_set=None,learning_rate=0.1,num_epochs=500,save=False,output_folder=None,lr_update=None,
-              mom_rate=0.9,update_type='annealed',begin_anneal=50,start=2):
+    def train(self,train_set,valid_set=None,learning_rate=0.1,num_epochs=500,save=False,output_folder=None,lr_update=True,
+              mom_rate=0.9,update_type='linear',begin_anneal=50,start=2):
         print 'Initializing training.'
         self.best_cost = numpy.inf
         self.init_lr = learning_rate
@@ -92,8 +101,27 @@ class SGD_Optimiser:
                     inputs = i + [self.lr]
                     if self.momentum:
                         inputs = inputs + [self.mom_rate]
-                    cost.append(self.f(*inputs))
-                mean_costs = numpy.mean(cost,axis=0)
+                    cost_no_update = self.calc_cost(*i)
+                    #print cost_no_update
+                    if numpy.isnan(cost_no_update):
+                        print 'Cost was NaN for a particular batch!'
+                        break
+                    else:
+                        cost.append(self.f(*inputs))
+                if numpy.isnan(cost_no_update):
+                    #pdb.set_trace()
+                    epochs = [i for i in xrange(len(self.train_costs))]
+                    costs = numpy.array(self.train_costs).reshape(-1)
+                    plot(epochs,costs)
+                    xlabel('epoch')
+                    ylabel('negative log-likelihood')
+                    title('Training on red wine dataset')
+                    if self.custom_grads:
+                        savefig('cost_custom.png')
+                    else:
+                        savefig('cost_theano.png')
+                    break
+                mean_costs = numpy.mean(cost,axis=0)                
                 if numpy.isnan(mean_costs[0]):
                     print 'Training cost is NaN.'
                     print 'Breaking from training early, the last saved set of parameters is still usable!'
@@ -174,5 +202,4 @@ class SGD_Optimiser:
             slope = self.init_lr/(num_iterations - start)
             if count >= start:
                 self.lr = self.init_lr - count * slope
-                print count
-                print self.lr
+                print 'Updated lr: ',self.lr

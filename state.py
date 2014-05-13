@@ -10,8 +10,8 @@ def get_state():
 	#misc parameters
 	state['save'] = True
 	state['load'] = False
-	state['output_folder'] = '/homes/sss31/PhD/NIPS'
-	state['load_dir'] = '/homes/sss31/PhD/NIPS'
+	state['output_folder'] = '/homes/sss31/PhD/NIPS/test_out'
+	state['load_dir'] = '/homes/sss31/PhD/NIPS/test_out'
 	#optimisation parameters
 	state['lr_update'] = True
 	state['update_type'] = 'linear'
@@ -22,7 +22,7 @@ def get_state():
 	state['learning_rate'] = 0.001
 	state['num_updates'] = 100000
 	state['start'] = 2 #Iteration at which the lr update should start
-	state['pre_train'] = False
+	state['pre_train'] = True
 	state['rec_mu'] = True
 	state['rec_mix'] = True
 	state['rec_sigma'] = True
