@@ -10,11 +10,11 @@ import theano
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 from model import Model
-from RNADE import RNADE
 from datasets import Dataset
 import mocap_data
 from SGD import SGD_Optimiser
 import pdb
+from RNADE import *
 
 def shared_normal(shape, scale=1,name=None):
     '''Initialize a matrix shared variable with normally distributed
@@ -140,6 +140,41 @@ class RNN_RNADE(Model):
         u_t = T.tanh(self.bu + T.dot(v_t,self.Wvu)) + T.dot(u_tm1,self.Wuu)
         return u_t,b_alpha_t,b_mu_t,b_sigma_t
 
+    def get_cond_distributions(self,v_t):
+        def one_step(v_t,u_tm1):
+            if self.rec_mix:
+                b_alpha = self.b_alpha.get_value().flatten() + numpy.dot(u_tm1,self.Wu_balpha.get_value())
+            else:
+                b_alpha = self.b_alpha.get_value().get_value().flatten()
+            if self.rec_mu:
+                b_mu = self.b_mu.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bmu.get_value())
+            else:
+                b_mu = self.b_mu.get_value().flatten()
+            if self.rec_sigma:
+                b_sigma = self.b_sigma.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bsigma.get_value())
+            else:
+                b_sigma = self.b_sigma.get_value().flatten()
+            u = numpy.tanh(self.bu.get_value() + numpy.dot(v_t,self.Wvu.get_value())) + numpy.dot(u_tm1,self.Wuu.get_value())
+            return u,b_alpha,b_mu,b_sigma
+        u_t = []
+        b_alpha_t = []
+        b_mu_t = []
+        b_sigma_t = []
+        for i in xrange(v_t.shape[0]):
+            if i==0:
+                u,b_alpha,b_mu,b_sigma = one_step(v_t[i],self.u0.get_value())
+                u_t.append(u)
+                b_alpha_t.append(b_alpha)
+                b_mu_t.append(b_mu)
+                b_sigma_t.append(b_sigma)
+            else:
+                u,b_alpha,b_mu,b_sigma = one_step(v_t[i],u_t[-1])
+                u_t.append(u)
+                b_alpha_t.append(b_alpha)
+                b_mu_t.append(b_mu)
+                b_sigma_t.append(b_sigma)
+        return numpy.array(u_t),numpy.array(b_alpha_t),numpy.array(b_mu_t),numpy.array(b_sigma_t)
+
     def rnade_recurrence(self,x,b_alpha_t,b_mu_t,b_sigma_t):
         #Reshape all the time dependent arrays
         b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
@@ -173,7 +208,53 @@ class RNN_RNADE(Model):
         for param in rnade.params:
             value = param.get_value()
             self.params_dict[param.name].set_value(value)
-        
+    
+    def sample_RNADE(self,b_alpha,b_mu,b_sigma,n):
+        W = self.W.get_value()
+        V_alpha = self.V_alpha.get_value()
+        #b_alpha = b_alpha.get_value()
+        V_mu = self.V_mu.get_value()
+        #b_mu = b_mu.get_value()
+        V_sigma = self.V_sigma.get_value()
+        #b_sigma = b_sigma.get_value()
+        activation_rescaling = self.activation_rescaling.get_value()
+        samples = numpy.zeros((self.n_visible, n))
+        for s in xrange(n):
+            a = numpy.zeros((self.n_hidden,))  # H
+            for i in xrange(self.n_visible):
+                if i == 0:
+                    a = W[i, :]
+                else:
+                    a = a + W[i, :] * samples[i - 1, s]
+                h = activation_function[self.hidden_act](a * activation_rescaling[i])
+                alpha = softmax(numpy.dot(h, V_alpha[i]) + b_alpha[i])  # C
+                Mu = numpy.dot(h, V_mu[i]) + b_mu[i]  # C
+                Sigma = numpy.minimum(numpy.exp(numpy.dot(h, V_sigma[i]) + b_sigma[i]), 1)
+                comp = random_component(alpha)
+                samples[i, s] = numpy.random.normal(Mu[comp], Sigma[comp])
+        return samples.T
+
+    def test(self,):
+        #pdb.set_trace()
+        (u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
+        self.test_func = theano.function([self.v],[u_t,b_alpha_t,b_mu_t,b_sigma_t])
+        test_seq = numpy.random.random((100,49)) 
+        a,b,c,d = self.test_func(test_seq)
+        e,f,g,h = self.get_cond_distributions(test_seq)
+        pdb.set_trace()
+
+    def sample_given_sequence(self,seq,n):
+        u_t,b_alpha_t,b_mu_t,b_sigma_t = self.get_cond_distributions(seq)
+        all_sequences = []
+        for i in xrange(n):
+            sequence = []
+            for b_alpha,b_mu,b_sigma in zip(b_alpha_t,b_mu_t,b_sigma_t):
+                sequence.append(self.sample_RNADE(b_alpha,b_mu,b_sigma,1))
+            sequence = numpy.array(sequence).reshape((-1,self.n_visible))
+            
+            all_sequences.append(sequence)
+        return numpy.array(all_sequences)
+
 if __name__ == '__main__':
     n_visible = 49
     n_hidden = 50
@@ -181,6 +262,7 @@ if __name__ == '__main__':
     n_components = 2
     test = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components)
     test.build_RNN_RNADE()
+    test.test()
     #test.init_RNADE()
     #test_sequence = numpy.random.random((100,49))
     #test_func = theano.function([test.v],test.probs)
