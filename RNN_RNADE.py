@@ -54,9 +54,14 @@ class RNN_RNADE(Model):
         self.V_alpha = shared_normal((n_visible,n_hidden,n_components),0.01,'V_alpha')
         self.b_mu = shared_normal((n_visible,n_components),0.01,'b_mu')
         self.V_mu = shared_normal((n_visible,n_hidden,n_components),0.01,'V_mu')
+        #From Benigno Uria's implementation
         self.b_sigma = shared_normal((n_visible,n_components),0.01,'b_sigma')
+        self.b_sigma.set_value(self.b_sigma.get_value() + 1.0)
+
         self.V_sigma = shared_normal((n_visible,n_hidden,n_components),0.01,'V_sigma')
-        self.activation_rescaling = shared_normal((n_visible),0.01,'activation_rescaling')
+        #Initialising activation rescaling to all 1s. 
+        self.activation_rescaling = shared_zeros((n_visible,),'activation_rescaling')
+        self.activation_rescaling.set_value(self.activation_rescaling.get_value() + 1.0)
         #RNN params
         self.Wuu = shared_normal((n_recurrent, n_recurrent), 0.0001,'Wuu')
         self.Wvu = shared_normal((n_visible, n_recurrent), 0.0001,'Wvu')
@@ -123,23 +128,6 @@ class RNN_RNADE(Model):
                                                 outputs_info=[p0, a0, x0])
         return (ps[-1], updates)
 
-    def rnn_recurrence(self,v_t,u_tm1):
-        #Flattening the array so that dot product is easier. 
-        if self.rec_mix:
-            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
-        else:
-            b_alpha_t = self.b_alpha.flatten(ndim=1)
-        if self.rec_mu:
-            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
-        else:
-            b_mu_t = self.b_mu.flatten(ndim=1)
-        if self.rec_sigma:
-            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
-        else:
-            b_sigma_t = self.b_sigma.flatten(ndim=1)
-        u_t = T.tanh(self.bu + T.dot(v_t,self.Wvu)) + T.dot(u_tm1,self.Wuu)
-        return u_t,b_alpha_t,b_mu_t,b_sigma_t
-
     def get_cond_distributions(self,v_t):
         def one_step(v_t,u_tm1):
             if self.rec_mix:
@@ -175,6 +163,23 @@ class RNN_RNADE(Model):
                 b_sigma_t.append(b_sigma)
         return numpy.array(u_t),numpy.array(b_alpha_t),numpy.array(b_mu_t),numpy.array(b_sigma_t)
 
+    def rnn_recurrence(self,v_t,u_tm1):
+        #Flattening the array so that dot product is easier. 
+        if self.rec_mix:
+            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
+        else:
+            b_alpha_t = self.b_alpha.flatten(ndim=1)
+        if self.rec_mu:
+            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
+        else:
+            b_mu_t = self.b_mu.flatten(ndim=1)
+        if self.rec_sigma:
+            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
+        else:
+            b_sigma_t = self.b_sigma.flatten(ndim=1)
+        u_t = T.tanh(self.bu + T.dot(v_t,self.Wvu)) + T.dot(u_tm1,self.Wuu)
+        return u_t,b_alpha_t,b_mu_t,b_sigma_t
+
     def rnade_recurrence(self,x,b_alpha_t,b_mu_t,b_sigma_t):
         #Reshape all the time dependent arrays
         b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
@@ -184,11 +189,36 @@ class RNN_RNADE(Model):
         prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
         return prob
     
+    def general_recurrence(self,x,u_tm1):
+        #Flattening the array so that dot product is easier. 
+        if self.rec_mix:
+            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
+        else:
+            b_alpha_t = self.b_alpha.flatten(ndim=1)
+        if self.rec_mu:
+            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
+        else:
+            b_mu_t = self.b_mu.flatten(ndim=1)
+        if self.rec_sigma:
+            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
+        else:
+            b_sigma_t = self.b_sigma.flatten(ndim=1)
+        u_t = T.tanh(self.bu + T.dot(x,self.Wvu)) + T.dot(u_tm1,self.Wuu)
+        #Reshape all the time dependent arrays
+        b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
+        b_mu_t = b_mu_t.reshape(self.b_mu.shape)
+        b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
+        inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
+        prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
+        return u_t,b_alpha_t,b_mu_t,b_sigma_t,prob
+
     def build_RNN_RNADE(self,):
-        (u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
-        self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
-        self.cost = -T.mean(self.log_probs) + self.l2*T.sum(self.W**2) #negative sign for the log-probabilities
-        self.log_cost = T.mean(self.log_probs)
+        #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
+        #self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
+        (u_t,b_alpha_t,b_mu_t,b_sigma_t,self.log_probs),updates = theano.scan(self.general_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
+        self.neg_ll = -self.log_probs
+        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Average negative log-likelihood per frame
+        self.log_cost = T.mean(self.neg_ll)
         self.l2_cost = T.sum(self.W**2)
 
     def init_RNADE(self,):
@@ -235,14 +265,14 @@ class RNN_RNADE(Model):
         return samples.T
 
     def test(self,):
-        #pdb.set_trace()
-        (u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
-        self.test_func = theano.function([self.v],[u_t,b_alpha_t,b_mu_t,b_sigma_t])
-        test_seq = numpy.random.random((100,49)) 
-        a,b,c,d = self.test_func(test_seq)
-        e,f,g,h = self.get_cond_distributions(test_seq)
         pdb.set_trace()
-
+        self.test_func = theano.function([self.v],self.log_probs)
+        test_seq = numpy.random.random((100,49)) 
+        temp = self.test_func(test_seq)
+        #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
+        #a,b,c,d = self.test_func(test_seq)
+        #e,f,g,h = self.get_cond_distributions(test_seq)
+        
     def sample_given_sequence(self,seq,n):
         u_t,b_alpha_t,b_mu_t,b_sigma_t = self.get_cond_distributions(seq)
         all_sequences = []
