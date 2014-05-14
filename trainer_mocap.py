@@ -47,7 +47,8 @@ class trainer:
 
     def pretrain_RNADE(self,):
         print 'Pre-training the RNADE'
-        rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=self.l2)
+        l2 = 2.
+        rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=l2)
         batch_size = 100
         num_examples = 100
         train_data = mocap_data.sample_train_seq(batch_size)
@@ -58,7 +59,7 @@ class trainer:
         train_frac = 0.8
         train_dataset = Dataset([train_data[0:int(train_frac*total_num)]],100)
         valid_dataset = Dataset([train_data[int(train_frac*total_num):]],100)
-        optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost],momentum=True,patience=20)
+        optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost,rnade.ll_cost,rnade.l2_cost],momentum=True,patience=20)
         optimiser.train(train_dataset,valid_set=valid_dataset,learning_rate=0.001,num_epochs=500,save=False,
                     lr_update=True,update_type='linear',start=2)
         self.plot_costs(optimiser,fig_title='Pretraining cost',filename='pretraining.png')
@@ -84,21 +85,20 @@ class trainer:
     def plot_costs(self,optimiser,fig_title='Default cost',filename='cost.png'):
         epochs = [i for i in xrange(len(optimiser.train_costs))]
         train_costs = numpy.array(optimiser.train_costs).reshape(-1)
-        pylab.plot(epochs,train_costs,'b',label='training ll')
+        pylab.plot(epochs,train_costs,'b',label='training loglik')
         pylab.xlabel('epoch')
         pylab.ylabel('negative log-likelihood')
         filename = os.path.join(self.output_folder,filename)
         if optimiser.valid_costs is not None:
             valid_costs = numpy.array(optimiser.valid_costs).reshape(-1)
-            pylab.plot(epochs,valid_costs,'r',label='valid ll')
+            pylab.plot(epochs,valid_costs,'r',label='valid loglik')
+            pylab.legend()
+            pylab.title(fig_title)
             pylab.savefig(filename)
         else:
+            pylab.legend()
+            pylab.title(fig_title)
             pylab.savefig(filename)
-        
-        
-        pylab.title(fig_title)
-        pylab.savefig(filename)
-
 
 if __name__ == '__main__':
     state = get_state()

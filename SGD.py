@@ -100,7 +100,7 @@ class SGD_Optimiser:
                     inputs = i + [self.lr]
                     if self.momentum:
                         inputs = inputs + [self.mom_rate]
-                    cost_no_update = self.calc_cost(*i)
+                    cost_no_update = self.calc_cost(*i)[0] #The first cost in the list is the objective
                     #print cost_no_update
                     if numpy.isnan(cost_no_update):
                         print 'Cost was NaN for a particular batch!'
@@ -151,7 +151,7 @@ class SGD_Optimiser:
         for i in xrange(self.num_costs):
             print "Cost %i: %f"%(i,mean_costs[i])
         
-        this_cost = numpy.absolute(numpy.mean(cost, axis=0))[0] #Using accuracy as metric
+        this_cost = numpy.absolute(numpy.mean(cost, axis=0))[0] #The first cost is the objective function
         if this_cost < self.best_cost:
             self.patience = 0
             self.best_cost = this_cost

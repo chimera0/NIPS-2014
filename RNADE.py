@@ -113,6 +113,8 @@ class RNADE:
     def build_fprop(self,):
         self.ps,updates = self.sym_logdensity(self.v.T)
         self.cost = -T.mean(self.ps,axis=0) + self.l2*T.sum(self.W**2)
+        self.ll_cost = -T.mean(self.ps,axis=0)
+        self.l2_cost = T.sum(self.W**2)
         #self.fprop = theano.function([self.v],self.ps)
 
     def build_fprop_two(self,):
