@@ -4,14 +4,14 @@ def get_state():
 	state['n_visible'] = 49
 	state['n_hidden'] = 50 #{20,40,50,70,80,100} Just guessing here, 
 	state['n_recurrent'] = 100 #{40,50,60,80,100} Again guessing
-	state['n_components'] = 2 #{2,5,10,20} From RNADE paper
-	state['hidden_act'] = 'ReLU'#'sigmoid'
-	state['l2'] = 2. #{2.0;1.0;0.1;0.01;0.001;0} From RNADE paper
+	state['n_components'] = 2 #{2,5,10,20} From RNADE papertest_outputs
+	state['hidden_act'] = 'sigmoid'#'sigmoid'
+	state['l2'] = 0.001 #{2.0;1.0;0.1;0.01;0.001;0} From RNADE paper
 	#misc parameters
 	state['save'] = True
 	state['load'] = False
-	state['output_folder'] = '/homes/sss31/PhD/NIPS'
-	state['load_dir'] = '/homes/sss31/PhD/NIPS'
+	state['output_folder'] = '/homes/sss31/PhD/NIPS/test_outputs'
+	state['load_dir'] = '/homes/sss31/PhD/NIPS/test_outputs'
 	#optimisation parameters
 	state['lr_update'] = True
 	state['update_type'] = 'linear' #This is essential for the RNADE. Not sure if we need it for the joint model. We can experiment with 'linear' or False

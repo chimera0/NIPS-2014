@@ -218,7 +218,6 @@ class RNN_RNADE(Model):
         (u_t,b_alpha_t,b_mu_t,b_sigma_t,self.log_probs),updates = theano.scan(self.general_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
         self.neg_ll = -self.log_probs
         self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Average negative log-likelihood per frame
-        self.log_cost = T.mean(self.neg_ll)
         self.l2_cost = T.sum(self.W**2)
 
     def init_RNADE(self,):

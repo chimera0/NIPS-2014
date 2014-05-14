@@ -109,17 +109,6 @@ class SGD_Optimiser:
                     else:
                         cost.append(self.f(*inputs))
                 if numpy.isnan(cost_no_update):
-                    #pdb.set_trace()
-                    epochs = [i for i in xrange(len(self.train_costs))]
-                    costs = numpy.array(self.train_costs).reshape(-1)
-                    plot(epochs,costs)
-                    xlabel('epoch')
-                    ylabel('negative log-likelihood')
-                    title('Training on red wine dataset')
-                    if self.custom_grads:
-                        savefig('cost_custom.png')
-                    else:
-                        savefig('cost_theano.png')
                     break
                 mean_costs = numpy.mean(cost,axis=0)                
                 if numpy.isnan(mean_costs[0]):
