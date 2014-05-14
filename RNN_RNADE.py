@@ -215,10 +215,13 @@ class RNN_RNADE(Model):
     def build_RNN_RNADE(self,):
         #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
         #self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
+        print 'Building computational graph for the RNN_RNADE.'
         (u_t,b_alpha_t,b_mu_t,b_sigma_t,self.log_probs),updates = theano.scan(self.general_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
         self.neg_ll = -self.log_probs
+        self.neg_ll_cost = T.mean(self.neg_ll,axis=0)
         self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Average negative log-likelihood per frame
         self.l2_cost = T.sum(self.W**2)
+        print 'Done building graph.'
 
     def init_RNADE(self,):
         pdb.set_trace()

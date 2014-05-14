@@ -29,8 +29,9 @@ class SGD_mocap(SGD_Optimiser):
             cost = []
             for u in xrange(num_updates):
                 batch_data = mocap_data.sample_train_seq(self.batch_size) #Ensure this is a list in the desired form. 
-                pdb.set_trace()
-                inputs = [list(batch_data)] + [self.lr]
+                fixed_array = numpy.zeros(batch_data.shape)
+                fixed_array[:] = batch_data
+                inputs = [fixed_array] + [self.lr]
                 if self.momentum:
                     inputs = inputs + [self.mom_rate]
                 cost.append(self.f(*inputs))

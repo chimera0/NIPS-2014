@@ -12,9 +12,6 @@ import os
 from theano.compat.python2x import OrderedDict
 import copy
 import pdb
-import matplotlib
-matplotlib.use('Agg')
-from pylab import *
 
 class SGD_Optimiser:
     def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20,custom_grads=False,custom_grad_dict=None):
@@ -50,13 +47,15 @@ class SGD_Optimiser:
         if self.momentum:
             self.mom_theano = T.scalar('mom')
             self.grad_inputs = self.grad_inputs + [self.mom_theano]
+        print 'Calculating gradients. This might take a while depending on the model...'
         if self.custom_grads:
             self.gparams = []
             for param in self.params:
                 self.gparams.append(self.custom_grad_dict[param.name])
         else:
             self.gparams = T.grad(self.costs[0],self.params,consider_constant=self.consider_constant)
-    
+        print 'Done calculating gradients.'
+
         if not self.momentum:
             print 'Building SGD optimization graph without momentum'
             updates = OrderedDict((i, i - self.lr_theano*j) for i, j in zip(self.params, self.gparams))

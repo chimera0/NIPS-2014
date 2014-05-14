@@ -85,7 +85,7 @@ class RNADE:
             #self.nonlinearity = lambda x:T.maximum(x,0.)
             self.nonlinearity = lambda x: x * (x > 0)
         self.v = T.matrix('v')
-        #self.build_fprop()
+        self.build_fprop()
         #self.build_fprop_two()
         #self.build_gradients()
         #self.build_cost()
@@ -111,7 +111,6 @@ class RNADE:
         return (ps[-1], updates)
 
     def build_fprop(self,):
-        print 'Using theano grads.'
         self.ps,updates = self.sym_logdensity(self.v.T)
         self.cost = -T.mean(self.ps,axis=0) + self.l2*T.sum(self.W**2)
         #self.fprop = theano.function([self.v],self.ps)
