@@ -163,33 +163,8 @@ class RNN_RNADE(Model):
                 b_sigma_t.append(b_sigma)
         return numpy.array(u_t),numpy.array(b_alpha_t),numpy.array(b_mu_t),numpy.array(b_sigma_t)
 
-    def rnn_recurrence(self,v_t,u_tm1):
-        #Flattening the array so that dot product is easier. 
-        if self.rec_mix:
-            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
-        else:
-            b_alpha_t = self.b_alpha.flatten(ndim=1)
-        if self.rec_mu:
-            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
-        else:
-            b_mu_t = self.b_mu.flatten(ndim=1)
-        if self.rec_sigma:
-            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
-        else:
-            b_sigma_t = self.b_sigma.flatten(ndim=1)
-        u_t = T.tanh(self.bu + T.dot(v_t,self.Wvu)) + T.dot(u_tm1,self.Wuu)
-        return u_t,b_alpha_t,b_mu_t,b_sigma_t
-
-    def rnade_recurrence(self,x,b_alpha_t,b_mu_t,b_sigma_t):
-        #Reshape all the time dependent arrays
-        b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
-        b_mu_t = b_mu_t.reshape(self.b_mu.shape)
-        b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
-        inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
-        prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
-        return prob
     
-    def general_recurrence(self,x,u_tm1):
+    def recurrence(self,x,u_tm1):
         #Flattening the array so that dot product is easier. 
         if self.rec_mix:
             b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
@@ -216,30 +191,12 @@ class RNN_RNADE(Model):
         #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
         #self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
         print 'Building computational graph for the RNN_RNADE.'
-        (u_t,b_alpha_t,b_mu_t,b_sigma_t,self.log_probs),updates = theano.scan(self.general_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
+        (u_t,b_alpha_t,b_mu_t,b_sigma_t,self.log_probs),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
         self.neg_ll = -self.log_probs
         self.neg_ll_cost = T.mean(self.neg_ll,axis=0)
         self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Average negative log-likelihood per frame
         self.l2_cost = T.sum(self.W**2)
         print 'Done building graph.'
-
-    def init_RNADE(self,):
-        pdb.set_trace()
-        rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=self.l2)
-        #rnade.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling]
-        batch_size = 100
-        num_examples = 100
-        train_data = mocap_data.sample_train_seq(batch_size)
-        for i in xrange(1,num_examples):
-            train_data = numpy.vstack((train_data,mocap_data.sample_train_seq(batch_size)))
-        numpy.random.shuffle(train_data)
-        train_dataset = Dataset([train_data],100)
-        optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost],momentum=True,patience=500)
-        optimiser.train(train_dataset,valid_set=None,learning_rate=0.001,num_epochs=1000,save=False,
-                    lr_update=True,update_type='linear',start=2)
-        for param in rnade.params:
-            value = param.get_value()
-            self.params_dict[param.name].set_value(value)
     
     def sample_RNADE(self,b_alpha,b_mu,b_sigma,n):
         W = self.W.get_value()
