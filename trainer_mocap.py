@@ -60,6 +60,7 @@ class trainer:
         batch_size = 100
         num_examples = 100
         filename = 'pre_train_params.pickle'
+        learning_rate = self.learning_rate_pretrain
         train_data = mocap_data.sample_train_seq(batch_size)
         for i in xrange(1,num_examples):
             train_data = numpy.vstack((train_data,mocap_data.sample_train_seq(batch_size)))
@@ -69,7 +70,7 @@ class trainer:
         train_dataset = Dataset([train_data[0:int(train_frac*total_num)]],100)
         valid_dataset = Dataset([train_data[int(train_frac*total_num):]],100)
         optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost,rnade.ll_cost,rnade.l2_cost],momentum=True,patience=20)
-        optimiser.train(train_dataset,valid_set=valid_dataset,learning_rate=0.001,num_epochs=5,save=True,
+        optimiser.train(train_dataset,valid_set=valid_dataset,learning_rate=learning_rate,num_epochs=5,save=True,
                     lr_update=True,update_type='linear',start=2,output_folder=self.output_folder,filename=filename)
         self.plot_costs(optimiser,fig_title='Pretraining cost',filename='pretraining.png')
         ####load best params from pre-training###

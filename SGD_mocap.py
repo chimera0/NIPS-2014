@@ -45,7 +45,7 @@ class SGD_mocap(SGD_Optimiser):
                 print '***Train Results***'
                 for i in xrange(self.num_costs):
                     print "Cost %i: %f"%(i,mean_costs[i])
-                self.train_costs.append(mean_costs[0])
+                self.train_costs.append(mean_costs)
                 if not valid_set:
                     this_cost = numpy.absolute(numpy.mean(cost, axis=0)[0])
                     if this_cost < self.best_cost:

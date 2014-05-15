@@ -110,8 +110,7 @@ class SGD_Optimiser:
                         cost.append(self.f(*inputs))
                 if numpy.isnan(cost_no_update):
                     break
-                mean_costs = numpy.mean(cost,axis=0) 
-                pdb.set_trace()               
+                mean_costs = numpy.mean(cost,axis=0)               
                 if numpy.isnan(mean_costs[0]):
                     print 'Training cost is NaN.'
                     print 'Breaking from training early, the last saved set of parameters is still usable!'
