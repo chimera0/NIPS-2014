@@ -9,7 +9,7 @@ import pdb
 
 class SGD_mocap(SGD_Optimiser):
     def train(self,valid_set=False,learning_rate=0.1,num_updates=500,save=False,output_folder=None,lr_update=None,
-              mom_rate=0.9,update_type='linear',start=2,batch_size=100):
+              mom_rate=0.9,update_type='linear',start=2,batch_size=100,filename=None):
         self.best_cost = numpy.inf
         self.init_lr = learning_rate
         self.lr = numpy.array(learning_rate)
@@ -25,6 +25,7 @@ class SGD_mocap(SGD_Optimiser):
         self.batch_size = batch_size
         self.update_type = update_type
         self.start = start
+        self.filename = filename
         try:
             cost = []
             for u in xrange(num_updates):

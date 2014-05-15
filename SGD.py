@@ -77,7 +77,7 @@ class SGD_Optimiser:
         self.f = theano.function(self.grad_inputs, self.costs, updates=self.updates_old)
 
     def train(self,train_set,valid_set=None,learning_rate=0.1,num_epochs=500,save=False,output_folder=None,lr_update=True,
-              mom_rate=0.9,update_type='linear',begin_anneal=50,start=2):
+              mom_rate=0.9,update_type='linear',begin_anneal=50,start=2,filename=None):
         print 'Initializing training.'
         self.best_cost = numpy.inf
         self.init_lr = learning_rate
@@ -93,6 +93,7 @@ class SGD_Optimiser:
         self.valid_costs = []
         self.num_epochs = num_epochs
         self.start = start - 1 #subtracting one for zero index. 
+        self.filename = filename
         try:
             for u in xrange(num_epochs):
                 cost = []
@@ -109,7 +110,8 @@ class SGD_Optimiser:
                         cost.append(self.f(*inputs))
                 if numpy.isnan(cost_no_update):
                     break
-                mean_costs = numpy.mean(cost,axis=0)                
+                mean_costs = numpy.mean(cost,axis=0) 
+                pdb.set_trace()               
                 if numpy.isnan(mean_costs[0]):
                     print 'Training cost is NaN.'
                     print 'Breaking from training early, the last saved set of parameters is still usable!'
@@ -168,11 +170,17 @@ class SGD_Optimiser:
     def save_model(self,):
         best_params = [param.get_value().copy() for param in self.params]
         if not self.output_folder:
-            cPickle.dump(best_params,open('best_params.pickle','w'))
+            if not self.filename:
+                cPickle.dump(best_params,open('best_params.pickle','w'))
+            else:
+                cPickle.dump(best_params,open(self.filename,'w'))
         else:
             if not os.path.exists(self.output_folder):
                 os.makedirs(self.output_folder)
-            save_path = os.path.join(self.output_folder,'best_params.pickle')
+            if not self.filename:
+                save_path = os.path.join(self.output_folder,'best_params.pickle')
+            else:
+                save_path = os.path.join(self.output_folder,self.filename)
             cPickle.dump(best_params,open(save_path,'w'))
 
 

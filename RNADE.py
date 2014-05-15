@@ -6,6 +6,7 @@ import theano
 import theano.tensor as T
 import pdb
 from theano.compat.python2x import OrderedDict
+from model import Model
 
 def shared_normal(shape, scale=1,name=None):
     '''Initialize a matrix shared variable with normally distributed
@@ -59,7 +60,7 @@ def random_component(component_probabilities):
 
 floatX = theano.config.floatX
 
-class RNADE:
+class RNADE(Model):
     def __init__(self,n_visible,n_hidden,n_components,hidden_act='ReLU',l2=0.):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
