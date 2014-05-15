@@ -41,7 +41,6 @@ class trainer:
         self.optimiser = SGD_mocap(self.model.params,[self.model.v],[self.model.cost,self.model.neg_ll_cost,self.model.l2_cost],momentum=self.momentum,patience=self.patience)
         self.optimiser.train(learning_rate=self.learning_rate,num_updates=self.num_updates,save=self.save,output_folder=self.output_folder,
                             lr_update=self.lr_update,update_type=self.update_type,mom_rate=self.mom_rate,start=self.start,batch_size=self.batch_size)
-        pdb.set_trace()
         optimiser = self.optimiser
         self.plot_costs(optimiser,fig_title='RNN-RNADE Training Cost',filename='training.png')
         self.results['train_costs'] = self.optimiser.train_costs
@@ -73,7 +72,9 @@ class trainer:
         optimiser.train(train_dataset,valid_set=valid_dataset,learning_rate=learning_rate,num_epochs=5,save=True,
                     lr_update=True,update_type='linear',start=2,output_folder=self.output_folder,filename=filename)
         self.plot_costs(optimiser,fig_title='Pretraining cost',filename='pretraining.png')
+        print 'Done pre-training.'
         ####load best params from pre-training###
+        print 'Loading best RNADE parameters'
         rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=l2)
         rnade.load_model(self.output_folder,filename=filename)
         ###########
@@ -104,7 +105,6 @@ class trainer:
 
     def plot_costs(self,optimiser,fig_title='Default cost',filename='cost.png'):
         epochs = [i for i in xrange(len(optimiser.train_costs))]
-        pdb.set_trace()
         train_costs = numpy.array(optimiser.train_costs)
         if train_costs.ndim == 1:
             train_costs = numpy.array(optimiser.train_costs).reshape(-1)
@@ -115,7 +115,7 @@ class trainer:
         pylab.xlabel('epoch')
         pylab.ylabel('negative log-likelihood')
         filename = os.path.join(self.output_folder,filename)
-        if optimiser.valid_costs is not None:
+        if  optimiser.valid_costs:
             valid_costs = numpy.array(optimiser.valid_costs)[:,0]
             pylab.plot(epochs,valid_costs,'r',label='valid loglik')
             pylab.legend()
@@ -127,6 +127,7 @@ class trainer:
             pylab.savefig(filename)
 
 if __name__ == '__main__':
+    #state = get_state()
     args = sys.argv
     n_hidden=int(args[1])
     n_recurrent=int(args[2])

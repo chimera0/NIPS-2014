@@ -23,8 +23,8 @@ def get_state():
     #misc parameters
     state['save'] = True
     state['load'] = False
-    state['output_folder'] = '/homes/sss31/PhD/NIPS'
-    state['load_dir'] = '/homes/sss31/PhD/NIPS'
+    state['output_folder'] = '/homes/sss31/PhD/NIPS/test_outputs'
+    state['load_dir'] = '/homes/sss31/PhD/NIPS/test_outputs'
     #optimisation parameters
     state['lr_update'] = True
     state['update_type'] = 'linear' #This is essential for the RNADE. Not sure if we need it for the joint model. We can experiment with 'linear' or False
@@ -33,12 +33,13 @@ def get_state():
     state['mom_rate'] = 0.9
     state['patience'] = 20
     state['learning_rate'] = 0.001  #{0.1,.01,.001,0.0001,0.0005} Guessing. Should try only small values for this.
-    state['num_updates'] = 100000
+    state['num_updates'] = 5
     state['start'] = 2 #Iteration at which the lr update should start
     state['pre_train'] = True #always
     state['rec_mu'] = True
     state['rec_mix'] = True
     state['rec_sigma'] = True
+    state['learning_rate_pretrain'] = 0.001
     return state
 
 #{1;0:05;0:025;0:0125} Try these for pre-training
