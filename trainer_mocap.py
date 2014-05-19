@@ -112,6 +112,7 @@ class trainer:
         else:
             train_costs = numpy.array(optimiser.train_costs)[:,0]  #0'th cost must be the objective 
 
+        pylab.figure()
         pylab.plot(epochs,train_costs,'b',label='training loglik')
         pylab.xlabel('epoch')
         pylab.ylabel('negative log-likelihood')
@@ -128,24 +129,24 @@ class trainer:
             pylab.savefig(filename)
 
 if __name__ == '__main__':
-    #state = get_state()
-    args = sys.argv
-    n_hidden=int(args[1])
-    n_recurrent=int(args[2])
-    n_components=int(args[3])
-    l2=float(args[4])
-    learning_rate=float(args[5])
-    learning_rate_pretrain=float(args[6])
-    trial = int(args[7])
-    name = "nh-{0}_nr-{1}_nc-{2}_l2-{3}_lr-{4}_lrpt-{5}_trial-{6}".format(n_hidden,n_recurrent,n_components,l2,learning_rate,learning_rate_pretrain,trial)
-    output_folder = create_output_folder(name)
-    state = get_state_args(n_hidden=n_hidden,
-                           n_recurrent=n_recurrent,
-                           n_components=n_components,
-                           l2=l2,
-                           learning_rate=learning_rate,
-                           learning_rate_pretrain=learning_rate_pretrain,
-                           output_folder = output_folder)
+    state = get_state()
+    # args = sys.argv
+    # n_hidden=int(args[1])
+    # n_recurrent=int(args[2])
+    # n_components=int(args[3])
+    # l2=float(args[4])
+    # learning_rate=float(args[5])
+    # learning_rate_pretrain=float(args[6])
+    # trial = int(args[7])
+    # name = "nh-{0}_nr-{1}_nc-{2}_l2-{3}_lr-{4}_lrpt-{5}_trial-{6}".format(n_hidden,n_recurrent,n_components,l2,learning_rate,learning_rate_pretrain,trial)
+    # output_folder = create_output_folder(name)
+    # state = get_state_args(n_hidden=n_hidden,
+    #                        n_recurrent=n_recurrent,
+    #                        n_components=n_components,
+    #                        l2=l2,
+    #                        learning_rate=learning_rate,
+    #                        learning_rate_pretrain=learning_rate_pretrain,
+    #                        output_folder = output_folder)
     trainer_exp = trainer(state)
     trainer_exp.train()
     trainer_exp.test()

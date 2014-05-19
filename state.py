@@ -35,7 +35,7 @@ def get_state():
     state['learning_rate'] = 0.001  #{0.1,.01,.001,0.0001,0.0005} Guessing. Should try only small values for this.
     state['num_updates'] = 5
     state['start'] = 2 #Iteration at which the lr update should start
-    state['pre_train'] = True #always
+    state['pre_train'] = False #always
     state['rec_mu'] = True
     state['rec_mix'] = True
     state['rec_sigma'] = True
