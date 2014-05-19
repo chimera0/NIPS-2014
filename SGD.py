@@ -14,7 +14,7 @@ import copy
 import pdb
 
 class SGD_Optimiser:
-    def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20,custom_grads=False,custom_grad_dict=None):
+    def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20,custom_grads=False,custom_grad_dict=None,state=None):
         """
         params: list containing the parameters of the model
         inputs: list of symbolic inputs to the graph
@@ -40,6 +40,8 @@ class SGD_Optimiser:
         self.updates_old = updates_old
         self.consider_constant = consider_constant
         self.build_train_fn()
+        self.save_model() #saving pre-trained model
+        self.state = state
 
     def build_train_fn(self,):
         self.lr_theano = T.scalar('lr')
@@ -198,3 +200,5 @@ class SGD_Optimiser:
             if count >= start:
                 self.lr = self.init_lr - count * slope
                 print 'Updated lr: ',self.lr
+
+   

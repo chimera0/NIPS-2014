@@ -67,3 +67,22 @@ class SGD_mocap(SGD_Optimiser):
 
         except KeyboardInterrupt: 
             print 'Training interrupted.'
+
+     def valid(self,):
+        model = RNN_RNADE(self.state['n_visible'],self.state['n_hidden'],self.state['n_recurrent'],self.state['n_components'],hidden_act=self.state['hidden_acts'],
+                l2=self.state['l2'],rec_mu=self.state['rec_mu'],rec_mix=self.state['rec_mix'],rec_sigma=self.state['rec_sigma'],load=True,load_dir=self.output_folder)
+        num_test_sequences = 100
+        batch_size = 100
+        num_samples = 10
+        error = []
+        for i in xrange(num_test_sequences):
+            seq = mocap_data.sample_test_seq(batch_size) 
+            samples = model.sample_given_sequence(seq,num_samples)
+            sq_diff = (samples - seq)**2
+            sq_diff = sq_diff.mean(axis=0)
+            sq_diff = sq_diff.sum(axis=1)
+            seq_error = sq_diff.mean(axis=0)
+            error.append(seq_error)
+        total_error = numpy.mean(error)
+        self.valid_costs.append(total_error)
+        

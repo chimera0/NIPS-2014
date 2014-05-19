@@ -38,7 +38,8 @@ class trainer:
         if self.pre_train:
             self.pretrain_RNADE()
         print 'Training RNN-RNADE'
-        self.optimiser = SGD_mocap(self.model.params,[self.model.v],[self.model.cost,self.model.neg_ll_cost,self.model.l2_cost],momentum=self.momentum,patience=self.patience)
+        self.optimiser = SGD_mocap(self.model.params,[self.model.v],[self.model.cost,self.model.neg_ll_cost,self.model.l2_cost],
+                                   momentum=self.momentum,patience=self.patience,state=self.state)
         self.optimiser.train(learning_rate=self.learning_rate,num_updates=self.num_updates,save=self.save,output_folder=self.output_folder,
                             lr_update=self.lr_update,update_type=self.update_type,mom_rate=self.mom_rate,start=self.start,batch_size=self.batch_size)
         optimiser = self.optimiser
@@ -47,10 +48,10 @@ class trainer:
         cPickle.dump(self.results,open(os.path.join(self.output_folder,'results.pickle'),'w'))
         #self.results['valid_costs'] = self.optimiser.valid_costs
 
-    def test(self,):
-        self.model = RNN_RNADE(self.n_visible,self.n_hidden,self.n_recurrent,self.n_components,hidden_act=self.hidden_act,l2=self.l2,rec_mu=self.rec_mu,
-                               rec_mix=self.rec_mix,rec_sigma=self.rec_sigma,load=self.load,load_dir=self.load_dir)
-        self.test_func = theano.function([self.model.v],self.model.log_probs)
+    # def test(self,):
+    #     self.model = RNN_RNADE(self.n_visible,self.n_hidden,self.n_recurrent,self.n_components,hidden_act=self.hidden_act,l2=self.l2,rec_mu=self.rec_mu,
+    #                            rec_mix=self.rec_mix,rec_sigma=self.rec_sigma,load=self.load,load_dir=self.load_dir)
+    #     self.test_func = theano.function([self.model.v],self.model.log_probs)
 
     def pretrain_RNADE(self,):
         print 'Pre-training the RNADE'

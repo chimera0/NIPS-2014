@@ -3,7 +3,7 @@ import operator
 import cPickle as cp
 import re
 from collections import Counter
-get_results = False
+get_results = True
 if get_results:
 	d = os.path.join(os.getcwd(),"results")
 	results = {}
