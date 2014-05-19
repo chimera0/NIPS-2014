@@ -94,7 +94,7 @@ class trainer:
         num_samples = 10
         error = []
         for i in xrange(num_test_sequences):
-            seq = mocap_data.sample_train_seq(batch_size) 
+            seq = mocap_data.sample_test_seq(batch_size) 
             samples = self.model.sample_given_sequence(seq,num_samples)
             error.append(numpy.mean((samples - seq)**2))    
         total_error = numpy.mean(error)
