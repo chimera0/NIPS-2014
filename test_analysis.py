@@ -19,7 +19,20 @@ matplotlib.use('Agg')
 # pdb.set_trace()
 # sample = bouncing_balls.bounce_vec(res,n=3,T=100)
 
+results = cPickle.load(open('good_results.pickle','r'))
+test_specs = results.keys()
+base_dir = '/homes/sss31/PhD/alex_sid_nips/results/'
+
+
+num_test_sequences = 100
+batch_size = 100
+num_samples = 5
+example = mocap_data.sample_test_seq(batch_size)
+#new_results = {}
+
+
 def test(filenames):
+    new_results = {}
     for filename in filenames:
         print 'Testing parameters: ',filename
         load_dir = base_dir + filename
@@ -43,19 +56,8 @@ def test(filenames):
             error.append(seq_error)
             print 'Seq %d error: '%(i+1),seq_error    
         print 'Mean error: ',numpy.mean(error)
-        new_results[filename] = error    
-
-
-results = cPickle.load(open('good_results.pickle','r'))
-test_specs = results.keys()
-base_dir = '/homes/sss31/PhD/alex_sid_nips/results/'
-
-
-num_test_sequences = 100
-batch_size = 100
-num_samples = 5
-example = mocap_data.sample_test_seq(batch_size)
-new_results = {}
+        new_results[filename] = numpy.mean(error)    
+    cPickle.dump(new_results,open('test_results.pickle','w'))
 
 def control_exp():
     n_hidden = 50
@@ -76,6 +78,7 @@ def control_exp():
         error.append(seq_error)
         print 'Seq %d error: '%(i+1),seq_error    
     print 'Mean error: ',numpy.mean(error)
-    new_results[filename] = error    
-control_exp()
-#test(test_specs)
+    new_results[filename] = numpy.mean(error)    
+
+#control_exp()
+test(test_specs)

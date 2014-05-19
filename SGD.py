@@ -40,7 +40,7 @@ class SGD_Optimiser:
         self.updates_old = updates_old
         self.consider_constant = consider_constant
         self.build_train_fn()
-        self.save_model() #saving pre-trained model
+        #self.save_model() #saving pre-trained model
         self.state = state
 
     def build_train_fn(self,):

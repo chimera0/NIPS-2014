@@ -4,6 +4,7 @@ import numpy
 import theano
 import theano.tensor as T
 from SGD import SGD_Optimiser
+from RNN_RNADE import RNN_RNADE
 import mocap_data
 import pdb
 
@@ -27,9 +28,11 @@ class SGD_mocap(SGD_Optimiser):
         self.start = start
         self.filename = filename
         self.valid_frequency = 1000
+        self.save_model() #saving model after pre-training
         try:
             cost = []
             for u in xrange(num_updates):
+                pdb.set_trace()
                 if u%1000 == 0:
                     self.valid()
                 else:

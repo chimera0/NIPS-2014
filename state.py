@@ -18,7 +18,7 @@ def get_state():
     state['n_hidden'] = 50 #{20,40,50,70,80,100} Just guessing here, 
     state['n_recurrent'] = 100 #{40,50,60,80,100} Again guessing
     state['n_components'] = 2 #{2,5,10,20} From RNADE paper
-    state['hidden_act'] = 'ReLU'#'sigmoid'
+    state['hidden_act'] = 'sigmoid'#'sigmoid'
     state['l2'] = 2. #{2.0;1.0;0.1;0.01;0.001;0} From RNADE paper
     #misc parameters
     state['save'] = True
