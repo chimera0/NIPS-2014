@@ -168,7 +168,7 @@ class SGD_Optimiser:
                 self.stop_train = True
 
 
-    def save_model(self,):
+    def save_model(self,filename=None):
         best_params = [param.get_value().copy() for param in self.params]
         if not self.output_folder:
             if not self.filename:

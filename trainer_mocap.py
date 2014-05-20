@@ -37,7 +37,7 @@ class trainer:
         self.model.build_RNN_RNADE()
 
     def load_pretrain_RNADE(self,):
-        rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=l2)
+        rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=self.l2)
         rnade.load_model(self.pretrain_folder,'pre_train_params.pickle')
         for param in rnade.params:
             value = param.get_value()
@@ -130,6 +130,7 @@ class trainer:
         pylab.title(fig_title)
         pylab.savefig(filename)
         if optimiser.valid_costs:
+            pdb.set_trace()
             valid_costs = numpy.array(optimiser.valid_costs)[:,0]
             epochs = [i for i in xrange(len(optimiser.valid_costs))]
             pylab.figure()
@@ -137,7 +138,7 @@ class trainer:
             pylab.xlabel('epoch')
             pylab.ylabel('squared_prediction error')
             pylab.legend()
-            filename = os.path.join(self.output_folder,'valid_costs.png')
+            filename = os.path.join(self.output_folder,'valid_costs_full.png')
             pylab.title(fig_title)
             pylab.savefig(filename)        
 

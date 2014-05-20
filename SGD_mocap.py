@@ -11,7 +11,8 @@ import pdb
 class SGD_mocap(SGD_Optimiser):
     def train(self,valid_set=False,learning_rate=0.1,num_updates=500,save=False,output_folder=None,lr_update=None,
               mom_rate=0.9,update_type='linear',start=2,batch_size=100,filename=None):
-        self.best_cost = numpy.inf
+        self.best_train_cost = numpy.inf
+        self.best_valid_cost = numpy.inf
         self.init_lr = learning_rate
         self.lr = numpy.array(learning_rate)
         self.mom_rate = mom_rate
@@ -32,7 +33,7 @@ class SGD_mocap(SGD_Optimiser):
         try:
             cost = []
             for u in xrange(num_updates):
-                pdb.set_trace()
+                #pdb.set_trace()
                 if u%1000 == 0:
                     self.valid()
                 else:
@@ -53,17 +54,14 @@ class SGD_mocap(SGD_Optimiser):
                     for i in xrange(self.num_costs):
                         print "Cost %i: %f"%(i,mean_costs[i])
                     self.train_costs.append(mean_costs)
-                    if not valid_set:
-                        this_cost = numpy.absolute(numpy.mean(cost, axis=0)[0])
-                        if this_cost < self.best_cost:
-                            self.best_cost = this_cost
-                            print 'Best Params!'
-                            if save:
-                                self.save_model()
-                        sys.stdout.flush()     
-                    else:
-                        self.perform_validation()
-                    
+                    this_cost = numpy.absolute(numpy.mean(cost, axis=0)[0])
+                    if this_cost < self.best_train_cost:
+                        self.best_train_cost = this_cost
+                        print 'Best Params!'
+                        if save:
+                            self.save_model('best_params_train.pickle')
+                    sys.stdout.flush()     
+             
                     if self.stop_train:
                         print 'Stopping training early.'
                         break
@@ -94,4 +92,7 @@ class SGD_mocap(SGD_Optimiser):
         total_error = numpy.mean(error)
         print 'Validation error: ',total_error
         self.valid_costs.append(total_error)
-        
+        if total_error < self.best_valid_cost:
+            print 'Best validation params!'
+            self.best_valid_cost = total_error
+            self.save_model('best_params_valid.pickle')

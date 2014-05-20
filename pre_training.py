@@ -28,7 +28,12 @@ def plot_costs(optimiser,output_folder,fig_title='Default cost',filename='cost.p
     pylab.title(fig_title)
     pylab.savefig(filename)
     if optimiser.valid_costs:
-        valid_costs = numpy.array(optimiser.valid_costs)[:,0]
+        pdb.set_trace()
+        valid_costs = numpy.array(optimiser.valid_costs)
+        if valid_costs.ndim == 1:
+            valid_costs = numpy.array(optimiser.valid_costs).reshape(-1)
+        else:
+            train_costs = numpy.array(optimiser.valid_costs)[:,0]  #0'th cost must be the objective 
         epochs = [i for i in xrange(len(optimiser.valid_costs))]
         pylab.figure()
         pylab.plot(epochs,valid_costs,'r',label='valid loglik')
@@ -42,9 +47,9 @@ def plot_costs(optimiser,output_folder,fig_title='Default cost',filename='cost.p
 
 #RNADE params
 n_visible = 49
-n_hidden = 100
-n_recurrent = 300
-n_components = 2
+n_hidden = 50
+n_recurrent = 100
+n_components = 5
 print 'Training the RNADE'
 l2 = 0.1
 hidden_act = 'sigmoid'
@@ -59,7 +64,7 @@ for i in xrange(1,num_examples):
     train_data = numpy.vstack((train_data,mocap_data.sample_train_seq(batch_size)))
 numpy.random.shuffle(train_data)
 #optimiser params
-output_folder = '/scratch/NIPS/100-300-2-0.1-0.001/3'
+output_folder = '/scratch/Sid/RNADE/50-100-5-0.1-0.001/3'
 total_num = train_data.shape[0]
 train_frac = 0.8
 train_dataset = Dataset([train_data[0:int(train_frac*total_num)]],100)
