@@ -77,9 +77,9 @@ class SGD_mocap(SGD_Optimiser):
 
     def valid(self,):
         print 'Performing validation.'
-        model = RNN_RNADE(self.state['n_visible'],self.state['n_hidden'],self.state['n_recurrent'],self.state['n_components'],hidden_act=self.state['hidden_acts'],
+        model = RNN_RNADE(self.state['n_visible'],self.state['n_hidden'],self.state['n_recurrent'],self.state['n_components'],hidden_act=self.state['hidden_act'],
                 l2=self.state['l2'],rec_mu=self.state['rec_mu'],rec_mix=self.state['rec_mix'],rec_sigma=self.state['rec_sigma'],load=True,load_dir=self.output_folder)
-        num_test_sequences = 100
+        num_test_sequences = 10
         batch_size = 100
         num_samples = 10
         error = []

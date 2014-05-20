@@ -43,7 +43,7 @@ class trainer:
         self.optimiser.train(learning_rate=self.learning_rate,num_updates=self.num_updates,save=self.save,output_folder=self.output_folder,
                             lr_update=self.lr_update,update_type=self.update_type,mom_rate=self.mom_rate,start=self.start,batch_size=self.batch_size)
         optimiser = self.optimiser
-        self.plot_costs(optimiser,fig_title='RNN-RNADE Training Cost',filename='training.png')
+        self.plot_costs(optimiser,fig_title='RNN-RNADE Training Cost',filename='training_cost.png')
         self.results['train_costs'] = self.optimiser.train_costs
         cPickle.dump(self.results,open(os.path.join(self.output_folder,'results.pickle'),'w'))
         #self.results['valid_costs'] = self.optimiser.valid_costs
@@ -117,16 +117,20 @@ class trainer:
         pylab.xlabel('epoch')
         pylab.ylabel('negative log-likelihood')
         filename = os.path.join(self.output_folder,filename)
-        if  optimiser.valid_costs:
+        pylab.legend()
+        pylab.title(fig_title)
+        pylab.savefig(filename)
+        if optimiser.valid_costs:
             valid_costs = numpy.array(optimiser.valid_costs)[:,0]
+            epochs = [i for i in xrange(len(optimiser.valid_costs))]
+            pylab.figure()
             pylab.plot(epochs,valid_costs,'r',label='valid loglik')
+            pylab.xlabel('epoch')
+            pylab.ylabel('validation error')
             pylab.legend()
+            filename = os.path.join(self.output_folder,'valid_costs.png')
             pylab.title(fig_title)
-            pylab.savefig(filename)
-        else:
-            pylab.legend()
-            pylab.title(fig_title)
-            pylab.savefig(filename)
+            pylab.savefig(filename)        
 
 if __name__ == '__main__':
     state = get_state()

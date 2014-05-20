@@ -196,7 +196,7 @@ class SGD_Optimiser:
             else:
                 self.lr = new_lr
         elif update_type == 'linear':
-            slope = self.init_lr/(num_iterations - start)
+            slope = self.init_lr/(num_iterations - start) #Ensure this is never zero, num_iterations must be > 2
             if count >= start:
                 self.lr = self.init_lr - count * slope
                 print 'Updated lr: ',self.lr
