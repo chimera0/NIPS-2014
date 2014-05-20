@@ -31,8 +31,17 @@ class trainer:
         print '********************'
         self.model = RNN_RNADE(self.n_visible,self.n_hidden,self.n_recurrent,self.n_components,hidden_act=self.hidden_act,l2=self.l2,rec_mu=self.rec_mu,
                                rec_mix=self.rec_mix,rec_sigma=self.rec_sigma,load=self.load,load_dir=self.load_dir)
+        if self.load_pretrain:
+            self.load_pretrain_RNADE()
         self.results = {}
         self.model.build_RNN_RNADE()
+
+    def load_pretrain_RNADE(self,):
+        rnade = RNADE(self.n_visible,self.n_hidden,self.n_components,hidden_act=self.hidden_act,l2=l2)
+        rnade.load_model(self.pretrain_folder,'pre_train_params.pickle')
+        for param in rnade.params:
+            value = param.get_value()
+            self.model.params_dict[param.name].set_value(value)
 
     def train(self,):
         if self.pre_train:
@@ -126,7 +135,7 @@ class trainer:
             pylab.figure()
             pylab.plot(epochs,valid_costs,'r',label='valid loglik')
             pylab.xlabel('epoch')
-            pylab.ylabel('validation error')
+            pylab.ylabel('squared_prediction error')
             pylab.legend()
             filename = os.path.join(self.output_folder,'valid_costs.png')
             pylab.title(fig_title)

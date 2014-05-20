@@ -39,6 +39,8 @@ def get_state():
     state['rec_mu'] = True
     state['rec_mix'] = True
     state['rec_sigma'] = True
+    state['load_pretrain'] = True
+    state['pretrain_folder'] = '/scratch/NIPS/50-100-2-0.1-0.001/2'
     state['learning_rate_pretrain'] = 0.001
     return state
 
