@@ -133,7 +133,7 @@ class RNN_RNADE(Model):
             if self.rec_mix:
                 b_alpha = self.b_alpha.get_value().flatten() + numpy.dot(u_tm1,self.Wu_balpha.get_value())
             else:
-                b_alpha = self.b_alpha.get_value().get_value().flatten()
+                b_alpha = self.b_alpha.get_value().flatten()
             if self.rec_mu:
                 b_mu = self.b_mu.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bmu.get_value())
             else:
@@ -187,6 +187,32 @@ class RNN_RNADE(Model):
         prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
         return u_t,b_alpha_t,b_mu_t,b_sigma_t,prob
 
+    def rec_two(self,x,u_tm1,prev_ll):
+        #Flattening the array so that dot product is easier. 
+        if self.rec_mix:
+            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
+        else:
+            b_alpha_t = self.b_alpha.flatten(ndim=1)
+        if self.rec_mu:
+            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
+        else:
+            b_mu_t = self.b_mu.flatten(ndim=1)
+        if self.rec_sigma:
+            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
+        else:
+            b_sigma_t = self.b_sigma.flatten(ndim=1)
+        u_t = T.tanh(self.bu + T.dot(x,self.Wvu)) + T.dot(u_tm1,self.Wuu)
+        #Reshape all the time dependent arrays
+        b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
+        b_mu_t = b_mu_t.reshape(self.b_mu.shape)
+        b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
+        inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
+        prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
+        accum_ll = prev_ll + prob
+        return u_t,accum_ll,b_alpha_t,b_mu_t,b_sigma_t
+
+
+
     def build_RNN_RNADE(self,):
         #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
         #self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
@@ -195,6 +221,17 @@ class RNN_RNADE(Model):
         self.neg_ll = -self.log_probs
         self.neg_ll_cost = T.mean(self.neg_ll,axis=0)
         self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Average negative log-likelihood per frame
+        self.l2_cost = T.sum(self.W**2)
+        print 'Done building graph.'
+
+    def build_two(self,):
+        print 'Building computational graph for the RNN_RNADE.'
+        p0 = T.shape_padright(T.zeros_like(self.v[0][0]))
+        (u_t,self.log_probs,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rec_two,sequences=self.v,outputs_info=[self.u0,p0,None,None,None])
+        self.log_probs = self.log_probs/self.v.shape[0]
+        self.neg_ll = -self.log_probs
+        self.neg_ll_cost = T.mean(self.neg_ll)
+        self.cost = self.neg_ll_cost + self.l2*T.sum(self.W**2) #Average negative log-likelihood per frame
         self.l2_cost = T.sum(self.W**2)
         print 'Done building graph.'
     
@@ -250,7 +287,8 @@ if __name__ == '__main__':
     n_recurrent = 30
     n_components = 2
     test = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components)
-    test.build_RNN_RNADE()
+    test.build_two()
+    #test.build_RNN_RNADE()
     test.test()
     #test.init_RNADE()
     #test_sequence = numpy.random.random((100,49))
