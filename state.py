@@ -32,7 +32,7 @@ def get_state():
     state['momentum'] = True
     state['mom_rate'] = 0.9
     state['patience'] = 20
-    state['learning_rate'] = 0.01  #{0.1,.01,.001,0.0001,0.0005} Guessing. Should try only small values for this.
+    state['learning_rate'] = 0.001  #{0.1,.01,.001,0.0001,0.0005} Guessing. Should try only small values for this.
     state['num_updates'] = 100000
     state['start'] = 2 #Iteration at which the lr update should start
     state['pre_train'] = False #always

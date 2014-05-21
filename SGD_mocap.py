@@ -29,7 +29,7 @@ class SGD_mocap(SGD_Optimiser):
         self.start = start
         self.filename = filename
         self.valid_frequency = 1000
-        self.save_model() #saving model after pre-training
+        #self.save_model() #saving model after pre-training
         try:
             cost = []
             for u in xrange(num_updates):
@@ -85,7 +85,7 @@ class SGD_mocap(SGD_Optimiser):
         error = []
         for i in xrange(num_test_sequences):
             seq = mocap_data.sample_test_seq(batch_size) 
-            samples = self.model.sample_given_sequence(seq,num_samples)
+            samples = model.sample_given_sequence(seq,num_samples)
             sq_diff = (samples - seq)**2
             sq_diff = sq_diff.mean(axis=0)
             sq_diff = sq_diff.sum(axis=1)
