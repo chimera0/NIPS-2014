@@ -76,14 +76,16 @@ class SGD_mocap(SGD_Optimiser):
     def valid(self,):
         print 'Performing validation.'
         model = RNN_RNADE(self.state['n_visible'],self.state['n_hidden'],self.state['n_recurrent'],self.state['n_components'],hidden_act=self.state['hidden_act'],
-                l2=self.state['l2'],rec_mu=self.state['rec_mu'],rec_mix=self.state['rec_mix'],rec_sigma=self.state['rec_sigma'],load=True,load_dir=self.output_folder)
+                l2=self.state['l2'],rec_mu=self.state['rec_mu'],rec_mix=self.state['rec_mix'],rec_sigma=self.state['rec_sigma'],load=False,load_dir=self.output_folder)
+        model.params = self.params
+        #model.load_model(self.output_folder,'best_params_train.pickle')
         num_test_sequences = 10
         batch_size = 100
-        num_samples = 10
+        num_samples = 1
         error = []
         for i in xrange(num_test_sequences):
             seq = mocap_data.sample_test_seq(batch_size) 
-            samples = model.sample_given_sequence(seq,num_samples)
+            samples = self.model.sample_given_sequence(seq,num_samples)
             sq_diff = (samples - seq)**2
             sq_diff = sq_diff.mean(axis=0)
             sq_diff = sq_diff.sum(axis=1)

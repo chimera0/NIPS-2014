@@ -171,17 +171,17 @@ class SGD_Optimiser:
     def save_model(self,filename=None):
         best_params = [param.get_value().copy() for param in self.params]
         if not self.output_folder:
-            if not self.filename:
+            if not filename:
                 cPickle.dump(best_params,open('best_params.pickle','w'))
             else:
-                cPickle.dump(best_params,open(self.filename,'w'))
+                cPickle.dump(best_params,open(filename,'w'))
         else:
             if not os.path.exists(self.output_folder):
                 os.makedirs(self.output_folder)
-            if not self.filename:
+            if not filename:
                 save_path = os.path.join(self.output_folder,'best_params.pickle')
             else:
-                save_path = os.path.join(self.output_folder,self.filename)
+                save_path = os.path.join(self.output_folder,filename)
             cPickle.dump(best_params,open(save_path,'w'))
 
 

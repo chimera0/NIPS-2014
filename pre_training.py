@@ -9,6 +9,7 @@ import mocap_data
 import matplotlib
 matplotlib.use('Agg')
 import pylab
+import pdb
 
 
 def plot_costs(optimiser,output_folder,fig_title='Default cost',filename='cost.png',):
@@ -28,7 +29,6 @@ def plot_costs(optimiser,output_folder,fig_title='Default cost',filename='cost.p
     pylab.title(fig_title)
     pylab.savefig(filename)
     if optimiser.valid_costs:
-        pdb.set_trace()
         valid_costs = numpy.array(optimiser.valid_costs)
         if valid_costs.ndim == 1:
             valid_costs = numpy.array(optimiser.valid_costs).reshape(-1)

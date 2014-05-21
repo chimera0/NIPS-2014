@@ -23,9 +23,9 @@ class Model:
             else:
               load_file = filename
             try:
-              with open(load_file,'r'):
+              with open(load_file,'r') as f:
                 print 'Loading saved parameters.'
-                init_params = cPickle.load(file('best_params.pickle'))
+                init_params = cPickle.load(f)
                 for i,j in zip(self.params,init_params):
                   i.set_value(j)
             except IOError:
@@ -36,9 +36,9 @@ class Model:
             else:
               path = os.path.join(load_dir,filename)
             try:
-              with open(path,'r'):
+              with open(path,'r') as f:
                 print 'Loading saved parameters from %s.'%(path)
-                init_params = cPickle.load(file(path))
+                init_params = cPickle.load(f)
                 for i,j in zip(self.params,init_params):
                   i.set_value(j)
             except IOError:

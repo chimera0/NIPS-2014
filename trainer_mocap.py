@@ -106,7 +106,11 @@ class trainer:
         for i in xrange(num_test_sequences):
             seq = mocap_data.sample_test_seq(batch_size) 
             samples = self.model.sample_given_sequence(seq,num_samples)
-            error.append(numpy.mean((samples - seq)**2))    
+            sq_diff = (samples - seq)**2
+            sq_diff = sq_diff.mean(axis=0)
+            sq_diff = sq_diff.sum(axis=1)
+            seq_error = sq_diff.mean(axis=0)   
+            error.append(seq_error)
         total_error = numpy.mean(error)
         self.results['error_list'] = error
         self.results['mean_error'] = total_error
@@ -130,11 +134,14 @@ class trainer:
         pylab.title(fig_title)
         pylab.savefig(filename)
         if optimiser.valid_costs:
-            pdb.set_trace()
-            valid_costs = numpy.array(optimiser.valid_costs)[:,0]
+            valid_costs = numpy.array(optimiser.valid_costs)
+            if valid_costs.ndim == 1:
+                valid_costs = numpy.array(optimiser.valid_costs).reshape(-1)
+            else:
+                train_costs = numpy.array(optimiser.valid_costs)[:,0]  #0'th cost must be the objective 
             epochs = [i for i in xrange(len(optimiser.valid_costs))]
             pylab.figure()
-            pylab.plot(epochs,valid_costs,'r',label='valid loglik')
+            pylab.plot(epochs,valid_costs,'b',label='sq pred. error')
             pylab.xlabel('epoch')
             pylab.ylabel('squared_prediction error')
             pylab.legend()
