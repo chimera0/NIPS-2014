@@ -169,6 +169,7 @@ class SGD_Optimiser:
 
 
     def save_model(self,filename=None):
+        print 'Saving model parameters.'
         best_params = [param.get_value().copy() for param in self.params]
         if not self.output_folder:
             if not filename:

@@ -71,9 +71,9 @@ class RNN_RNADE(Model):
         self.Wu_balpha = shared_normal((n_recurrent,n_visible*n_components),0.01,'Wu_balpha')
         self.Wu_bmu = shared_normal((n_recurrent,n_visible*n_components),0.01,'Wu_bmu')
         self.Wu_bsigma = shared_normal((n_recurrent,n_visible*n_components),0.01,'Wu_bsigma')
-        self.Wu_Valpha = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Valpha')
-        self.Wu_Vmu = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vmu')
-        self.Wu_Vsigma = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vsigma')
+        #self.Wu_Valpha = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Valpha')
+        #self.Wu_Vmu = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vmu')
+        #self.Wu_Vsigma = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vsigma')
         self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling,self.Wuu,
                        self.bu]#,self.Wu_balpha,self.Wu_bmu,self.Wu_bsigma]
         #params to decide the architecture

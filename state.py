@@ -23,8 +23,8 @@ def get_state():
     #misc parameters
     state['save'] = True
     state['load'] = False
-    state['output_folder'] = '/scratch/Sid/RNN-RNADE/100-300-2-0.1-0.001/sigma'
-    state['load_dir'] = '/scratch/Sid/RNN-RNADE/100-300-2-0.1-0.001/sigma'
+    state['output_folder'] = '/scratch/Sid/RNN-RNADE/100-300-2-0.1-0.001/all'
+    state['load_dir'] = '/scratch/Sid/RNN-RNADE/100-300-2-0.1-0.001/all'
     #optimisation parameters
     state['lr_update'] = True
     state['update_type'] = 'linear' #This is essential for the RNADE. Not sure if we need it for the joint model. We can experiment with 'linear' or False
@@ -37,8 +37,8 @@ def get_state():
     state['start'] = 2 #Iteration at which the lr update should start
     state['pre_train'] = False #always
     state['rec_mu'] = False
-    state['rec_mix'] = False
-    state['rec_sigma'] = True
+    state['rec_mix'] = True
+    state['rec_sigma'] = False
     state['load_pretrain'] = True
     state['pretrain_folder'] = '/scratch/Sid/RNADE/100-300-2-0.1-0.001/3'
     state['learning_rate_pretrain'] = 0.001
