@@ -138,7 +138,7 @@ class trainer:
             if valid_costs.ndim == 1:
                 valid_costs = numpy.array(optimiser.valid_costs).reshape(-1)
             else:
-                train_costs = numpy.array(optimiser.valid_costs)[:,0]  #0'th cost must be the objective 
+                valid_costs = numpy.array(optimiser.valid_costs)[:,0]  #0'th cost must be the objective 
             epochs = [i for i in xrange(len(optimiser.valid_costs))]
             pylab.figure()
             pylab.plot(epochs,valid_costs,'b',label='sq pred. error')

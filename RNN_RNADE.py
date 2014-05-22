@@ -201,7 +201,7 @@ class RNN_RNADE(Model):
             b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
         else:
             b_sigma_t = self.b_sigma.flatten(ndim=1)
-        u_t = T.tanh(self.bu + T.dot(x,self.Wvu)) + T.dot(u_tm1,self.Wuu)
+        u_t = T.tanh(self.bu + T.dot(x,self.Wvu) + T.dot(u_tm1,self.Wuu))
         #Reshape all the time dependent arrays
         b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
         b_mu_t = b_mu_t.reshape(self.b_mu.shape)
