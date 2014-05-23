@@ -74,8 +74,8 @@ class RNN_RNADE(Model):
         #self.Wu_Valpha = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Valpha')
         #self.Wu_Vmu = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vmu')
         #self.Wu_Vsigma = shared_normal((n_recurrent,n_visible*n_hidden*n_components),0.01,'Wu_Vsigma')
-        self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling,self.Wuu,
-                       self.bu]#,self.Wu_balpha,self.Wu_bmu,self.Wu_bsigma]
+        self.params = [self.W,self.b_alpha,self.V_alpha,self.b_mu,self.V_mu,self.b_sigma,self.V_sigma,self.activation_rescaling,self.Wuu,self.Wvu,
+                       self.bu,self.u0]#,self.Wu_balpha,self.Wu_bmu,self.Wu_bsigma]
         #params to decide the architecture
         self.rec_sigma = rec_sigma
         self.rec_mu = rec_mu
@@ -168,21 +168,20 @@ class RNN_RNADE(Model):
         #Flattening the array so that dot product is easier. 
         if self.rec_mix:
             b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
+            b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
         else:
-            b_alpha_t = self.b_alpha.flatten(ndim=1)
+            b_alpha_t = self.b_alpha
         if self.rec_mu:
             b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
+            b_mu_t = b_mu_t.reshape(self.b_mu.shape)
         else:
-            b_mu_t = self.b_mu.flatten(ndim=1)
+            b_mu_t = self.b_mu
         if self.rec_sigma:
             b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
+            b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
         else:
-            b_sigma_t = self.b_sigma.flatten(ndim=1)
-        u_t = T.tanh(self.bu + T.dot(x,self.Wvu) + T.dot(u_tm1,self.Wuu))
-        #Reshape all the time dependent arrays
-        b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
-        b_mu_t = b_mu_t.reshape(self.b_mu.shape)
-        b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
+            b_sigma_t = self.b_sigma
+        u_t = T.tanh(T.dot(x,self.Wvu) + T.dot(u_tm1,self.Wuu) + self.bu)
         inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
         prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
         return u_t,b_alpha_t,b_mu_t,b_sigma_t,prob
@@ -219,8 +218,8 @@ class RNN_RNADE(Model):
         print 'Building computational graph for the RNN_RNADE.'
         (u_t,b_alpha_t,b_mu_t,b_sigma_t,self.log_probs),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
         self.neg_ll = -self.log_probs
-        self.neg_ll_cost = T.mean(self.neg_ll,axis=0)
-        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Average negative log-likelihood per frame
+        self.neg_ll_cost = T.mean(self.neg_ll,axis=0) #Average negative log-likelihood per frame
+        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Mean is there in order to make cost scalar. Must check this. 
         self.l2_cost = T.sum(self.W**2)
         print 'Done building graph.'
 
