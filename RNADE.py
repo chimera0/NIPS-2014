@@ -109,7 +109,7 @@ class RNADE(Model):
         ([ps, _as, _xs], updates) = theano.scan(density_given_previous_a_and_x,
                                                 sequences=[x, self.W, self.V_alpha, self.b_alpha, self.V_mu, self.b_mu, self.V_sigma, self.b_sigma,self.activation_rescaling],
                                                 outputs_info=[p0, a0, x0])
-        return (ps[-1], updates)
+        return (ps[-1],updates)
 
     def build_fprop(self,):
         self.ps,updates = self.sym_logdensity(self.v.T)
@@ -143,12 +143,22 @@ class RNADE(Model):
                 samples[i, s] = numpy.random.normal(Mu[comp], Sigma[comp])
         return samples.T
 
+    def alt_fprop(self,x):
+        def density_given_previous_a_and_x(x, w, V_alpha, b_alpha, V_mu, b_mu, V_sigma, b_sigma,activation_factor, p_prev, a_prev, x_prev,):
+            a = a_prev + x_prev * w
+            h = self.nonlinearity(a * activation_factor)  # BxH
+
+            Alpha = T.nnet.softmax(T.dot(h, V_alpha) + T.shape_padleft(b_alpha))  # BxC
+            Mu = T.dot(h, V_mu) + T.shape_padleft(b_mu)  # BxC
+            Sigma = T.exp((T.dot(h, V_sigma) + T.shape_padleft(b_sigma)))  # BxC
+            p = p_prev + log_sum_exp(-constantX(0.5) * T.sqr((Mu - x) / Sigma) - T.log(Sigma) - constantX(0.5 * numpy.log(2 * numpy.pi)) + T.log(Alpha))
+            return (p, a, x)
 
 if __name__ == '__main__':
     n_visible = 10
     n_hidden = 20
     n_components = 2
-    hidden_act = 'ReLU'
+    hidden_act = 'sigmoid'
     test = RNADE(n_visible,n_hidden,n_components,hidden_act)
     samples = test.sample(20)
     #print 'Finding grads'

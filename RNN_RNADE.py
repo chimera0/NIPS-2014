@@ -43,7 +43,7 @@ floatX = theano.config.floatX
 
 class RNN_RNADE(Model):
     def __init__(self,n_visible,n_hidden,n_recurrent,n_components,hidden_act='ReLU',
-                 l2=1.,rec_sigma=True,rec_mu=True,rec_mix=True,load=False,load_dir=None):
+                 l2=1.,rec_sigma=False,rec_mu=False,rec_mix=False,load=False,load_dir=None):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
         self.n_recurrent = n_recurrent
@@ -190,9 +190,9 @@ class RNN_RNADE(Model):
         #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
         #self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
         print 'Building computational graph for the RNN_RNADE.'
-        (u_t,b_alpha_t,b_mu_t,b_sigma_t,self.log_probs),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
-        self.neg_ll = -self.log_probs
-        self.neg_ll_cost = T.mean(self.neg_ll,axis=0) #Average negative log-likelihood per frame
+        (self.u_t,self.b_alpha_t,self.b_mu_t,self.b_sigma_t,self.log_probs),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
+        self.neg_ll = self.log_probs*(-1)
+        self.neg_ll_cost = T.mean(self.log_probs*(-1)) #Average negative log-likelihood per frame
         self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Mean is there in order to make cost scalar. Must check this. 
         self.l2_cost = T.sum(self.W**2)
         print 'Done building graph.'
