@@ -86,7 +86,7 @@ class RNN_RNADE(Model):
             self.params.append(self.Wu_bmu)
         if rec_mix:
             self.params.append(self.Wu_balpha)
-
+        print self.params
         self.params_dict = {}
         for param in self.params:
             self.params_dict[param.name] = param
@@ -142,7 +142,7 @@ class RNN_RNADE(Model):
                 b_sigma = self.b_sigma.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bsigma.get_value())
             else:
                 b_sigma = self.b_sigma.get_value().flatten()
-            u = numpy.tanh(self.bu.get_value() + numpy.dot(v_t,self.Wvu.get_value())) + numpy.dot(u_tm1,self.Wuu.get_value())
+            u = numpy.tanh(self.bu.get_value() + numpy.dot(v_t,self.Wvu.get_value()) + numpy.dot(u_tm1,self.Wuu.get_value()))
             return u,b_alpha,b_mu,b_sigma
         u_t = []
         b_alpha_t = []
@@ -185,32 +185,6 @@ class RNN_RNADE(Model):
         inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
         prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
         return u_t,b_alpha_t,b_mu_t,b_sigma_t,prob
-
-    def rec_two(self,x,u_tm1,prev_ll):
-        #Flattening the array so that dot product is easier. 
-        if self.rec_mix:
-            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
-        else:
-            b_alpha_t = self.b_alpha.flatten(ndim=1)
-        if self.rec_mu:
-            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
-        else:
-            b_mu_t = self.b_mu.flatten(ndim=1)
-        if self.rec_sigma:
-            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
-        else:
-            b_sigma_t = self.b_sigma.flatten(ndim=1)
-        u_t = T.tanh(self.bu + T.dot(x,self.Wvu) + T.dot(u_tm1,self.Wuu))
-        #Reshape all the time dependent arrays
-        b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
-        b_mu_t = b_mu_t.reshape(self.b_mu.shape)
-        b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
-        inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
-        prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
-        accum_ll = prev_ll + prob
-        return u_t,accum_ll,b_alpha_t,b_mu_t,b_sigma_t
-
-
 
     def build_RNN_RNADE(self,):
         #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
@@ -286,8 +260,8 @@ if __name__ == '__main__':
     n_recurrent = 30
     n_components = 2
     test = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components)
-    test.build_two()
-    #test.build_RNN_RNADE()
+    #test.build_two()
+    test.build_RNN_RNADE()
     test.test()
     #test.init_RNADE()
     #test_sequence = numpy.random.random((100,49))
