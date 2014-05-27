@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import numpy.random
+import pdb
 
 def softmax(X):
     """Calculates softmax row-wise"""
@@ -52,6 +53,7 @@ def bp_normalize(do, x):
     return j_normalize(x).dot(do)
 
 def logsumexp(X, axis = 1):
+    #pdb.set_trace()
     """Calculates logsumexp row-wise"""
     if X.ndim == 1:
         m = np.max(X)

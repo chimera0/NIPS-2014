@@ -44,18 +44,18 @@ def logdensity_np(X,model,b_alpha,b_mu,b_sigma):
         #np.maximum(a_tmp,0,out=h) # h is BxH
         #Compute mixture components
         #alpha
-        #alpha = softmax(np.tanh(h.dot(V_alpha[i]) + b_alpha[i])*10.0) #BxC
-        np.dot(h, V_alpha[i], out=oact)
-        np.add(oact, b_alpha[i], out=oact)
+        alpha = softmax(h.dot(V_alpha[i]) + b_alpha[i]) #BxC
+        #np.dot(h, V_alpha[i], out=oact)
+        #np.add(oact, b_alpha[i], out=oact)
         #            np.tanh(oact,out=oact)
         #            np.multiply(oact, 10, out=oact)
-        pdb.set_trace()
+        #pdb.set_trace()
         #np.max(oact, 1, out=tempB1)
-        tempB1 = oact.max(axis=1)
-        np.subtract(oact, tempB1, out=oact)
-        np.exp(oact, out=oact)
-        np.sum(oact, 1, out=tempB1)
-        np.divide(oact, tempB1, out=alpha)
+        # tempB1 = oact.max(axis=1)
+        # np.subtract(oact, tempB1, out=oact)
+        # np.exp(oact, out=oact)
+        # np.sum(oact, 1, out=tempB1)
+        # np.divide(oact, tempB1, out=alpha)
 
         #mu
         #            mu = np.dot(h, V_mu[i]) + b_mu[i] #BxC
@@ -63,7 +63,8 @@ def logdensity_np(X,model,b_alpha,b_mu,b_sigma):
         np.add(oact, b_mu[i], out=mu)
 
         #sigma
-        sigma = np.log(1.0+np.exp((h.dot(V_sigma[i]) + b_sigma[i])*10))/10 #BxC
+        sigma = np.exp(h.dot(V_sigma[i]) + b_sigma[i])
+        #sigma = np.log(1.0+np.exp((h.dot(V_sigma[i]) + b_sigma[i])*10))/10 #BxC
         # np.dot(h, V_sigma[i], out=oact)
         # np.add(oact, b_sigma[i], out=oact)
         # np.multiply(oact,10, out=oact)

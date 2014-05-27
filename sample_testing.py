@@ -33,24 +33,31 @@ out_ll,neg_ll,u_t,b_alpha_t,b_mu_t,b_sigma_t = ll(new_seq)
 #Testing fprop through RNADE for certain parameter configs
 
 rnade = RNADE(n_visible,n_hidden,n_components,hidden_act='sigmoid')
+#initialise the values. 
+rnade.build_fprop()
 rnade.W.set_value(model.W.get_value())
 rnade.V_alpha.set_value(model.V_alpha.get_value())
 rnade.V_mu.set_value(model.V_mu.get_value())
 rnade.V_sigma.set_value(model.V_sigma.get_value())
-rnade.b_alpha.set_value(b_alpha_t[0])
-rnade.b_mu.set_value(b_mu_t[0])
-rnade.b_sigma.set_value(b_sigma_t[0])
 rnade.activation_rescaling.set_value(model.activation_rescaling.get_value())
-rnade.build_fprop()
 
 inp = new_seq[0,numpy.newaxis]
+temp = logdensity_np(inp.T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0])
+
 rnade_func = theano.function([rnade.v],rnade.ps)
 
-out = rnade_func(new_seq[0:5])
-
-temp = logdensity_np(new_seq[0:5].T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0])
+rnade_ll = []
+numpy_ll = []
+count = 0
+for b_alpha,b_mu,b_sigma in zip(b_alpha_t,b_mu_t,b_sigma_t):
+	pdb.set_trace()
+	inp = new_seq[count,numpy.newaxis]
+	#set rnade param values
+	rnade.b_alpha.set_value(b_alpha)
+	rnade.b_mu.set_value(b_mu)
+	rnade.b_sigma.set_value(b_sigma)
+	rnade_ll.append(rnade_func(inp))
+	numpy_ll.append(logdensity_np(inp.T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0]))
+	count+=1
 
 pdb.set_trace()
-
-
-

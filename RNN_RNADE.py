@@ -63,8 +63,8 @@ class RNN_RNADE(Model):
         self.activation_rescaling = shared_zeros((n_visible,),'activation_rescaling')
         self.activation_rescaling.set_value(self.activation_rescaling.get_value() + 1.0)
         #RNN params
-        self.Wuu = shared_normal((n_recurrent, n_recurrent), 0.0001,'Wuu')
-        self.Wvu = shared_normal((n_visible, n_recurrent), 0.0001,'Wvu')
+        self.Wuu = shared_normal((n_recurrent, n_recurrent), 0.01,'Wuu')
+        self.Wvu = shared_normal((n_visible, n_recurrent), 0.01,'Wvu')
         self.bu = shared_zeros((n_recurrent),'bu')
         self.u0 = shared_zeros((n_recurrent),'u0')
         #RNN-RNADE params, not all of them are used.
@@ -167,17 +167,17 @@ class RNN_RNADE(Model):
     def recurrence(self,x,u_tm1):
         #Flattening the array so that dot product is easier. 
         if self.rec_mix:
-            b_alpha_t = self.b_alpha.flatten(ndim=1) + T.dot(u_tm1,self.Wu_balpha)
+            b_alpha_t = self.b_alpha.flatten() + T.dot(u_tm1,self.Wu_balpha)
             b_alpha_t = b_alpha_t.reshape(self.b_alpha.shape)
         else:
             b_alpha_t = self.b_alpha
         if self.rec_mu:
-            b_mu_t = self.b_mu.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bmu)
+            b_mu_t = self.b_mu.flatten() + T.dot(u_tm1,self.Wu_bmu)
             b_mu_t = b_mu_t.reshape(self.b_mu.shape)
         else:
             b_mu_t = self.b_mu
         if self.rec_sigma:
-            b_sigma_t = self.b_sigma.flatten(ndim=1) + T.dot(u_tm1,self.Wu_bsigma)
+            b_sigma_t = self.b_sigma.flatten() + T.dot(u_tm1,self.Wu_bsigma)
             b_sigma_t = b_sigma_t.reshape(self.b_sigma.shape)
         else:
             b_sigma_t = self.b_sigma
