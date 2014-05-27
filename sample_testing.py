@@ -25,39 +25,44 @@ num_samples = 1
 seq = mocap_data.sample_train_seq(batch_size)
 new_seq = numpy.zeros(seq.shape)
 new_seq[:] = seq
+
+ll = RNN_RNADE_fprop(new_seq,model)
+pdb.set_trace()
+
 #new_seq = list(new_seq)
 
-ll = theano.function([model.v],[model.log_probs,model.neg_ll,model.u_t,model.b_alpha_t,model.b_mu_t,model.b_sigma_t])
+# ll = theano.function([model.v],[model.log_probs,model.neg_ll,model.u_t,model.b_alpha_t,model.b_mu_t,model.b_sigma_t])
 
-out_ll,neg_ll,u_t,b_alpha_t,b_mu_t,b_sigma_t = ll(new_seq)
-#Testing fprop through RNADE for certain parameter configs
+# out_ll,neg_ll,u_t,b_alpha_t,b_mu_t,b_sigma_t = ll(new_seq)
+# #Testing fprop through RNADE for certain parameter configs
 
-rnade = RNADE(n_visible,n_hidden,n_components,hidden_act='sigmoid')
-#initialise the values. 
-rnade.build_fprop()
-rnade.W.set_value(model.W.get_value())
-rnade.V_alpha.set_value(model.V_alpha.get_value())
-rnade.V_mu.set_value(model.V_mu.get_value())
-rnade.V_sigma.set_value(model.V_sigma.get_value())
-rnade.activation_rescaling.set_value(model.activation_rescaling.get_value())
+# rnade = RNADE(n_visible,n_hidden,n_components,hidden_act='sigmoid')
+# #initialise the values. 
+# rnade.build_fprop()
+# rnade.W.set_value(model.W.get_value())
+# rnade.V_alpha.set_value(model.V_alpha.get_value())
+# rnade.V_mu.set_value(model.V_mu.get_value())
+# rnade.V_sigma.set_value(model.V_sigma.get_value())
+# rnade.activation_rescaling.set_value(model.activation_rescaling.get_value())
 
-inp = new_seq[0,numpy.newaxis]
-temp = logdensity_np(inp.T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0])
+# inp = new_seq[0,numpy.newaxis]
+# temp = logdensity_np(inp.T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0])
 
-rnade_func = theano.function([rnade.v],rnade.ps)
+# rnade_func = theano.function([rnade.v],rnade.ps)
 
-rnade_ll = []
-numpy_ll = []
-count = 0
-for b_alpha,b_mu,b_sigma in zip(b_alpha_t,b_mu_t,b_sigma_t):
-	pdb.set_trace()
-	inp = new_seq[count,numpy.newaxis]
-	#set rnade param values
-	rnade.b_alpha.set_value(b_alpha)
-	rnade.b_mu.set_value(b_mu)
-	rnade.b_sigma.set_value(b_sigma)
-	rnade_ll.append(rnade_func(inp))
-	numpy_ll.append(logdensity_np(inp.T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0]))
-	count+=1
+# rnade_ll = []
+# numpy_ll = []
+# new_ll = []
+# count = 0
+# for b_alpha,b_mu,b_sigma in zip(b_alpha_t,b_mu_t,b_sigma_t):
+# 	inp = new_seq[count,numpy.newaxis]
+# 	#set rnade param values
+# 	rnade.b_alpha.set_value(b_alpha)
+# 	rnade.b_mu.set_value(b_mu)
+# 	rnade.b_sigma.set_value(b_sigma)
+# 	rnade_ll.append(rnade_func(inp))
+# 	numpy_ll.append(logdensity_np(inp.T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0]))
+# 	new_ll.append(numpy_rnade(inp.T,rnade,b_alpha_t[0],b_mu_t[0],b_sigma_t[0]))
+# 	count+=1
 
-pdb.set_trace()
+# pdb.set_trace()

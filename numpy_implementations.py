@@ -1,95 +1,87 @@
-#    @profile
 import theano
 import numpy as np
 from utils import *
 import pdb
-floatX = theano.config.floatX
-def logdensity_np(X,model,b_alpha,b_mu,b_sigma):
-    """
-    X is VxB
-    """
+
+
+
+def get_cond_distributions(v_t,model):
+    def one_step(x,u_tm1):
+        if model.rec_mix:
+            shape = model.b_alpha.get_value().shape
+            b_alpha = model.b_alpha.get_value().flatten() + numpy.dot(u_tm1,model.Wu_balpha.get_value())
+            b_alpha = b_alpha.reshape(shape)
+        else:
+            b_alpha = model.b_alpha.get_value()
+        if model.rec_mu:
+            shape = model.b_mu.get_value().shape
+            b_mu = model.b_mu.get_value().flatten() + numpy.dot(u_tm1,model.Wu_bmu.get_value())
+            b_mu = b_mu.reshape(shape)
+        else:
+            b_mu = model.b_mu.get_value()
+        if model.rec_sigma:
+            shape = model.b_sigma.get_value().shape
+            b_sigma = model.b_sigma.get_value().flatten() + numpy.dot(u_tm1,model.Wu_bsigma.get_value())
+            b_sigma = b_sigma.reshape(shape)
+        else:
+            b_sigma = model.b_sigma.get_value()
+        u = numpy.tanh(model.bu.get_value() + numpy.dot(x,model.Wvu.get_value()) + numpy.dot(u_tm1,model.Wuu.get_value()))
+        return u,b_alpha,b_mu,b_sigma
+    u_t = []
+    b_alpha_t = []
+    b_mu_t = []
+    b_sigma_t = []
+    for i in xrange(v_t.shape[0]):
+        if i==0:
+            u,b_alpha,b_mu,b_sigma = one_step(v_t[i],model.u0.get_value())
+            u_t.append(u)
+            b_alpha_t.append(b_alpha)
+            b_mu_t.append(b_mu)
+            b_sigma_t.append(b_sigma)
+        else:
+            u,b_alpha,b_mu,b_sigma = one_step(v_t[i],u_t[-1])
+            u_t.append(u)
+            b_alpha_t.append(b_alpha)
+            b_mu_t.append(b_mu)
+            b_sigma_t.append(b_sigma)
+    return numpy.array(u_t),numpy.array(b_alpha_t),numpy.array(b_mu_t),numpy.array(b_sigma_t)
+
+
+
+def RNN_RNADE_fprop(v_t,model):
+    u_t,b_alpha_t,b_mu_t,b_sigma_t = get_cond_distributions(v_t,model)
+    ll = []
+    i = 0
+    for b_alpha,b_mu,b_sigma in zip(b_alpha_t,b_mu_t,b_sigma_t):
+        inp = v_t[i]
+        inp = inp[:,numpy.newaxis] 
+        log_lik = numpy_rnade(inp,model,b_alpha,b_mu,b_sigma)
+        ll.append(log_lik)
+    return numpy.array(ll),u_t,b_alpha_t,b_mu_t,b_sigma_t
+
+
+def numpy_rnade(x,model,b_alpha,b_mu,b_sigma):
     W = model.W.get_value()
     V_alpha = model.V_alpha.get_value()
     V_mu = model.V_mu.get_value()
     V_sigma = model.V_sigma.get_value()
     activation_rescaling = model.activation_rescaling.get_value()
-
-    V,H,C = V_alpha.shape
-    V,B = X.shape
-
-    p = np.zeros((B,), dtype=floatX)
-    h = np.ndarray((B,H), dtype=floatX)
-
-    alpha = np.ndarray((B,C), dtype=floatX)
-    mu    = np.ndarray((B,C), dtype=floatX)
-    sigma = np.ndarray((B,C), dtype=floatX)
-    oact = np.ndarray((B,C), dtype=floatX)
-    temp = np.ndarray((B,), dtype=floatX)
-    tempB = np.ndarray((B,), dtype=floatX)
-    tempB1 = np.ndarray((B,1), dtype=floatX)
-    tempBC = np.ndarray((B,C), dtype=floatX)
-    a_tmp = np.ndarray((B,H), dtype=floatX)
     k = 0.5*np.log(2*np.pi)
-    for i in xrange(model.n_visible):
-       # Compute hidden unit activations
+    a = 0
+    p = 0
+    for i in xrange(x.shape[0]):
         if i == 0:
-            a = np.tile(W[i,:],(B, 1))
+            a = W[i] 
         else:
-#                a = a + X[[i-1],:].T * W[[i],:]
-            np.multiply(X[[i-1],:].T, W[[i],:], out=a_tmp)
-            np.add(a, a_tmp, out=a)
-       # Compute hidden unit outputs
-        np.multiply(a, activation_rescaling[i], out=a_tmp)
-        h = sigmoid(a_tmp)
-        #np.maximum(a_tmp,0,out=h) # h is BxH
-        #Compute mixture components
-        #alpha
-        alpha = softmax(h.dot(V_alpha[i]) + b_alpha[i]) #BxC
-        #np.dot(h, V_alpha[i], out=oact)
-        #np.add(oact, b_alpha[i], out=oact)
-        #            np.tanh(oact,out=oact)
-        #            np.multiply(oact, 10, out=oact)
-        #pdb.set_trace()
-        #np.max(oact, 1, out=tempB1)
-        # tempB1 = oact.max(axis=1)
-        # np.subtract(oact, tempB1, out=oact)
-        # np.exp(oact, out=oact)
-        # np.sum(oact, 1, out=tempB1)
-        # np.divide(oact, tempB1, out=alpha)
-
-        #mu
-        #            mu = np.dot(h, V_mu[i]) + b_mu[i] #BxC
-        np.dot(h, V_mu[i], out=oact)
-        np.add(oact, b_mu[i], out=mu)
-
-        #sigma
-        sigma = np.exp(h.dot(V_sigma[i]) + b_sigma[i])
-        #sigma = np.log(1.0+np.exp((h.dot(V_sigma[i]) + b_sigma[i])*10))/10 #BxC
-        # np.dot(h, V_sigma[i], out=oact)
-        # np.add(oact, b_sigma[i], out=oact)
-        # np.multiply(oact,10, out=oact)
-        # np.exp(oact, out=oact)
-        # np.add(oact, 1.0, out=oact)
-        # np.log(oact, out=oact)
-        # np.divide(oact, 10, out=sigma)
-
-        p = p + logsumexp(-0.5 * (((mu - X[[i-1],:].T) / sigma)**2) + np.log(alpha) + (-np.log(sigma)-k))
-        # np.subtract(mu, X[[i-1],:].T, out=oact)
-        # np.divide(oact, sigma, out=oact)
-        # np.power(oact, 2, out=oact)
-        # np.multiply(oact, -0.5, out=oact)
-        # np.log(alpha, out=alpha)
-        # np.add(oact,alpha,out=oact)
-
-        # np.log(sigma, out=tempBC)
-        # np.add(tempBC, k, out=tempBC)
-        # np.subtract(oact, tempBC, out=oact)
-
-        # tempB1 = np.amax(oact,axis=1)
-        # np.subtract(oact, tempB1, out=oact)
-        # np.exp(oact, out=oact)
-        # np.sum(oact, 1, out=tempB)
-        # np.log(tempB, out=tempB)
-        # np.add(tempB, tempB1.flatten(), out=tempB)
-        # np.add(p, tempB, out=p)
+            a = a + W[i] * x[i-1] 
+        activations = a * activation_rescaling[i]
+        h = sigmoid(activations)
+        alpha = softmax(numpy.dot(h,V_alpha[i]) + b_alpha[i])
+        mu = numpy.dot(h,V_mu[i]) + b_mu[i]
+        sigma = numpy.exp(numpy.dot(h,V_sigma[i]) + b_sigma[i])
+        arg = -0.5 * (((mu - x[i]) / sigma)**2) + np.log(alpha) + (-np.log(sigma)-k)
+        inc = logsumexp(arg)
+        p = p + inc
+        #print inc
+        #print p
     return p

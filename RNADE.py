@@ -96,7 +96,7 @@ class RNADE(Model):
         def density_given_previous_a_and_x(x, w, V_alpha, b_alpha, V_mu, b_mu, V_sigma, b_sigma,activation_factor, p_prev, a_prev, x_prev,):
             a = a_prev + T.dot(T.shape_padright(x_prev, 1), T.shape_padleft(w, 1))
             h = self.nonlinearity(a * activation_factor)  # BxH
-            x = theano.printing.Print('x')(x)
+            #x = theano.printing.Print('x')(x)
             Alpha = T.nnet.softmax(T.dot(h, V_alpha) + T.shape_padleft(b_alpha))  # BxC
             Alpha = theano.printing.Print('Alphas')(Alpha)
             Mu = T.dot(h, V_mu) + T.shape_padleft(b_mu)  # BxC
@@ -108,7 +108,7 @@ class RNADE(Model):
             p_var = log_sum_exp(arg)
             p_var = theano.printing.Print('p_var')(p_var)
             p = p_prev + p_var
-            p = theano.printing.Print('p')(p)
+            #p = theano.printing.Print('p')(p)
             return (p, a, x)
         # First element is different (it is predicted from the bias only)
         a0 = T.zeros_like(T.dot(x.T, self.W))  # BxH

@@ -104,30 +104,6 @@ class RNN_RNADE(Model):
         if self.load:
             self.load_model(self.load_dir)
 
-    def rnade_sym(self,x,W,V_alpha,b_alpha,V_mu,b_mu,V_sigma,b_sigma,activation_rescaling):
-        """ x is a matrix of column datapoints (VxB) V = n_visible, B = batch size """
-        def density_given_previous_a_and_x(x, w, V_alpha, b_alpha, V_mu, b_mu, V_sigma, b_sigma,activation_factor, p_prev, a_prev, x_prev,):
-            a = a_prev + T.dot(T.shape_padright(x_prev, 1), T.shape_padleft(w, 1))
-            h = self.nonlinearity(a * activation_factor)  # BxH
-
-            Alpha = T.nnet.softmax(T.dot(h, V_alpha) + T.shape_padleft(b_alpha))  # BxC
-            Mu = T.dot(h, V_mu) + T.shape_padleft(b_mu)  # BxC
-            Sigma = T.exp((T.dot(h, V_sigma) + T.shape_padleft(b_sigma)))  # BxC
-            p = p_prev + log_sum_exp(-constantX(0.5) * T.sqr((Mu - T.shape_padright(x, 1)) / Sigma) - T.log(Sigma) - constantX(0.5 * numpy.log(2 * numpy.pi)) + T.log(Alpha))
-            return (p, a, x)
-        # First element is different (it is predicted from the bias only)
-        a0 = T.zeros_like(T.dot(x.T, W))  # BxH
-        #a0 = T.cast(a0,floatX)
-        p0 = T.zeros_like(x[0])
-        #p0 = T.cast(p0,floatX)
-        x0 = T.ones_like(x[0])
-        #x0 = T.cast(x0,floatX)
-        
-        ([ps, _as, _xs], updates) = theano.scan(density_given_previous_a_and_x,
-                                                sequences=[x, W, V_alpha, b_alpha,V_mu,b_mu,V_sigma,b_sigma,activation_rescaling],
-                                                outputs_info=[p0, a0, x0])
-        return (ps[-1], updates)
-
     def get_cond_distributions(self,v_t):
         def one_step(v_t,u_tm1):
             if self.rec_mix:
@@ -162,6 +138,31 @@ class RNN_RNADE(Model):
                 b_mu_t.append(b_mu)
                 b_sigma_t.append(b_sigma)
         return numpy.array(u_t),numpy.array(b_alpha_t),numpy.array(b_mu_t),numpy.array(b_sigma_t)
+
+    
+    def rnade_sym(self,x,W,V_alpha,b_alpha,V_mu,b_mu,V_sigma,b_sigma,activation_rescaling):
+        """ x is a matrix of column datapoints (VxB) V = n_visible, B = batch size """
+        def density_given_previous_a_and_x(x, w, V_alpha, b_alpha, V_mu, b_mu, V_sigma, b_sigma,activation_factor, p_prev, a_prev, x_prev,):
+            a = a_prev + T.dot(T.shape_padright(x_prev, 1), T.shape_padleft(w, 1))
+            h = self.nonlinearity(a * activation_factor)  # BxH
+
+            Alpha = T.nnet.softmax(T.dot(h, V_alpha) + T.shape_padleft(b_alpha))  # BxC
+            Mu = T.dot(h, V_mu) + T.shape_padleft(b_mu)  # BxC
+            Sigma = T.exp((T.dot(h, V_sigma) + T.shape_padleft(b_sigma)))  # BxC
+            p = p_prev + log_sum_exp(-constantX(0.5) * T.sqr((Mu - T.shape_padright(x, 1)) / Sigma) - T.log(Sigma) - constantX(0.5 * numpy.log(2 * numpy.pi)) + T.log(Alpha))
+            return (p, a, x)
+        # First element is different (it is predicted from the bias only)
+        a0 = T.zeros_like(T.dot(x.T, W))  # BxH
+        #a0 = T.cast(a0,floatX)
+        p0 = T.zeros_like(x[0])
+        #p0 = T.cast(p0,floatX)
+        x0 = T.ones_like(x[0])
+        #x0 = T.cast(x0,floatX)
+        
+        ([ps, _as, _xs], updates) = theano.scan(density_given_previous_a_and_x,
+                                                sequences=[x, W, V_alpha, b_alpha,V_mu,b_mu,V_sigma,b_sigma,activation_rescaling],
+                                                outputs_info=[p0, a0, x0])
+        return (ps[-1], updates)
 
     
     def recurrence(self,x,u_tm1):
