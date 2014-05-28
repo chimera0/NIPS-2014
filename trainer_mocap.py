@@ -8,7 +8,8 @@ import cPickle
 import theano
 import theano.tensor as T 
 import state
-from RNN_RNADE import RNN_RNADE
+#from RNN_RNADE import RNN_RNADE
+from RNN_RNADE_2 import RNN_RNADE
 from SGD_mocap import SGD_mocap
 from SGD import SGD_Optimiser
 from RNADE import RNADE

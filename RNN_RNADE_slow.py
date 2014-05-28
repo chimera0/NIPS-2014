@@ -145,11 +145,19 @@ class RNN_RNADE(Model):
         def density_given_previous_a_and_x(x, w, V_alpha, b_alpha, V_mu, b_mu, V_sigma, b_sigma,activation_factor, p_prev, a_prev, x_prev,):
             a = a_prev + T.dot(T.shape_padright(x_prev, 1), T.shape_padleft(w, 1))
             h = self.nonlinearity(a * activation_factor)  # BxH
-            Alpha = T.nnet.softmax(T.dot(h, V_alpha) + b_alpha)  # BxC
-            Mu = T.dot(h, V_mu) + b_mu  # BxC
-            Sigma = T.exp(T.dot(h, V_sigma) + b_sigma)  # BxC
+            #x = theano.printing.Print('x')(x)
+            Alpha = T.nnet.softmax(T.dot(h, V_alpha) + T.shape_padleft(b_alpha))  # BxC
+            Alpha = theano.printing.Print('Alphas')(Alpha)
+            Mu = T.dot(h, V_mu) + T.shape_padleft(b_mu)  # BxC
+            Mu = theano.printing.Print('Mu')(Mu)
+            Sigma = T.exp((T.dot(h, V_sigma) + T.shape_padleft(b_sigma)))  # BxC
+            Sigma = theano.printing.Print('Sigmas')(Sigma)
             arg = -constantX(0.5) * T.sqr((Mu - T.shape_padright(x, 1)) / Sigma) - T.log(Sigma) - constantX(0.5 * numpy.log(2 * numpy.pi)) + T.log(Alpha)
-            p = p_prev + log_sum_exp(arg)
+            arg = theano.printing.Print('printing argument of logsumexp')(arg)
+            p_var = log_sum_exp(arg)
+            p_var = theano.printing.Print('p_var')(p_var)
+            p = p_prev + p_var
+            #p = theano.printing.Print('p')(p)
             return (p, a, x)
         # First element is different (it is predicted from the bias only)
         a0 = T.zeros_like(T.dot(x.T, W))  # BxH
@@ -179,18 +187,16 @@ class RNN_RNADE(Model):
         else:
             b_sigma_t = self.b_sigma
         u_t = T.tanh(T.dot(x,self.Wvu) + T.dot(u_tm1,self.Wuu) + self.bu)
-        return u_t,b_alpha_t,b_mu_t,b_sigma_t
+        inp = T.shape_padright(x) #Padding the input, it should be (V X 1)
+        inp = theano.printing.Print('input_vector')(inp)
+        prob,updates = self.rnade_sym(inp,self.W,self.V_alpha,b_alpha_t,self.V_mu,b_mu_t,self.V_sigma,b_sigma_t,self.activation_rescaling)
+        return u_t,b_alpha_t,b_mu_t,b_sigma_t,prob
 
     def build_RNN_RNADE(self,):
         #(u_t,b_alpha_t,b_mu_t,b_sigma_t),updates = theano.scan(self.rnn_recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None])
         #self.log_probs,updates = theano.scan(self.rnade_recurrence,sequences=[self.v,b_alpha_t,b_mu_t,b_sigma_t],outputs_info=[None])
         print 'Building computational graph for the RNN_RNADE.'
-        (self.u_t,self.b_alpha_t,self.b_mu_t,self.b_sigma_t),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None]) #BxVxC
-        #self.u_t = self.u_t.dimshuffle(1,0,2)
-        self.b_alpha_t = self.b_alpha_t.dimshuffle(1,0,2) #VxBxC
-        self.b_mu_t = self.b_mu_t.dimshuffle(1,0,2) #VxBxC
-        self.b_sigma_t = self.b_sigma_t.dimshuffle(1,0,2) #VxBxC
-        self.log_probs,updates = self.rnade_sym(self.v.T,self.W,self.V_alpha,self.b_alpha_t,self.V_mu,self.b_mu_t,self.V_sigma,self.b_sigma_t,self.activation_rescaling)
+        (self.u_t,self.b_alpha_t,self.b_mu_t,self.b_sigma_t,self.log_probs),updates = theano.scan(self.recurrence,sequences=self.v,outputs_info=[self.u0,None,None,None,None])
         self.neg_ll = self.log_probs*(-1)
         self.neg_ll_cost = T.mean(self.log_probs*(-1)) #Average negative log-likelihood per frame
         self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Mean is there in order to make cost scalar. Must check this. 
@@ -235,7 +241,6 @@ class RNN_RNADE(Model):
 
     def test(self,):
         pdb.set_trace()
-        grads = theano.grad
         self.test_func = theano.function([self.v],self.log_probs)
         test_seq = numpy.random.random((100,49)) 
         temp = self.test_func(test_seq)
@@ -261,6 +266,7 @@ if __name__ == '__main__':
     n_recurrent = 30
     n_components = 2
     test = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components)
+    #test.build_two()
     test.build_RNN_RNADE()
     test.test()
     #test.init_RNADE()
