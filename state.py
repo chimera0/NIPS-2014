@@ -17,14 +17,14 @@ def get_state():
     state['n_visible'] = 49
     state['n_hidden'] = 100 #{20,40,50,70,80,100} Just guessing here, 
     state['n_recurrent'] = 300 #{40,50,60,80,100} Again guessing
-    state['n_components'] = 2 #{2,5,10,20} From RNADE paper1
+    state['n_components'] = 1 #{2,5,10,20} From RNADE paper1
     state['hidden_act'] = 'sigmoid'#'sigmoid'
     state['l2'] = 0.1 #{2.0;1.0;0.1;0.01;0.001;0} From RNADE paper
     #misc parameters
     state['save'] = True
     state['load'] = False
-    state['output_folder'] = '/scratch/Sid/RNN_RNADE_2/test'
-    state['load_dir'] = '/scratch/Sid/RNN_RNADE_2/test'
+    state['output_folder'] = '/scratch/Sid/RNN_RNADE_fast_reg/100-300-1-0.001-0.1/mu-sigma'
+    state['load_dir'] = '/scratch/Sid/RNN_RNADE_fast/test'
     #optimisation parameters
     state['lr_update'] = True
     state['update_type'] = 'linear' #This is essential for the RNADE. Not sure if we need it for the joint model. We can experiment with 'linear' or False
@@ -38,8 +38,8 @@ def get_state():
     state['pre_train'] = False #always
     state['rec_mu'] = True
     state['rec_mix'] = False
-    state['rec_sigma'] = False
-    state['load_pretrain'] = True
+    state['rec_sigma'] = True
+    state['load_pretrain'] = False
     state['pretrain_folder'] = '/scratch/Sid/RNADE/100-300-2-0.1-0.001/3'
     state['learning_rate_pretrain'] = 0.001
     return state

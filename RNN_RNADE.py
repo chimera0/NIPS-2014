@@ -193,7 +193,7 @@ class RNN_RNADE(Model):
         self.log_probs,updates = self.rnade_sym(self.v.T,self.W,self.V_alpha,self.b_alpha_t,self.V_mu,self.b_mu_t,self.V_sigma,self.b_sigma_t,self.activation_rescaling)
         self.neg_ll = self.log_probs*(-1)
         self.neg_ll_cost = T.mean(self.log_probs*(-1)) #Average negative log-likelihood per frame
-        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) #Mean is there in order to make cost scalar. Must check this. 
+        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) + self.l2*T.sum(self.Wu_bmu**2)#Mean is there in order to make cost scalar. Must check this. 
         self.l2_cost = T.sum(self.W**2)
         print 'Done building graph.'
 

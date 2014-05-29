@@ -102,7 +102,7 @@ class trainer:
                                rec_mix=self.rec_mix,rec_sigma=self.rec_sigma,load=True,load_dir=self.load_dir)
         num_test_sequences = 100
         batch_size = 100
-        num_samples = 10
+        num_samples = 1
         error = []
         for i in xrange(num_test_sequences):
             seq = mocap_data.sample_test_seq(batch_size) 
@@ -171,4 +171,4 @@ if __name__ == '__main__':
     #                        output_folder = output_folder)
     trainer_exp = trainer(state)
     trainer_exp.train()
-    trainer_exp.test()
+    #trainer_exp.test()

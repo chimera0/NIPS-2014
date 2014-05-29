@@ -48,14 +48,16 @@ class SGD_mocap(SGD_Optimiser):
                     if numpy.isnan(mean_costs[0]):
                         print 'Training cost is NaN.'
                         print 'Breaking from training early, the last saved set of parameters is still usable!'
+                        print 'Saving broken model for analysis.'
+                        self.save_model('params_NaN.pickle')
                         break
                     print '  Update %i   ' %(u+1)
                     print '***Train Results***'
                     for i in xrange(self.num_costs):
                         print "Cost %i: %f"%(i,mean_costs[i])
                     self.train_costs.append(mean_costs)
-                    this_cost = numpy.absolute(numpy.mean(cost, axis=0)[0])
-                    if u > 100: #Because cost is not stable at the start of joint training of RNN_RNADE
+                    this_cost = numpy.mean(cost, axis=0)[0]
+                    if u > 0: #Because cost is not stable at the start of joint training of RNN_RNADE
                         if this_cost < self.best_train_cost:
                             self.best_train_cost = this_cost
                             print 'Best Params!'
@@ -80,9 +82,9 @@ class SGD_mocap(SGD_Optimiser):
                 l2=self.state['l2'],rec_mu=self.state['rec_mu'],rec_mix=self.state['rec_mix'],rec_sigma=self.state['rec_sigma'],load=False,load_dir=self.output_folder)
         #model.params = self.params
         model.load_model(self.output_folder,'best_params_train.pickle')
-        num_test_sequences = 10
+        num_test_sequences = 100
         batch_size = 100
-        num_samples = 1
+        num_samples = 10
         error = []
         for i in xrange(num_test_sequences):
             seq = mocap_data.sample_test_seq(batch_size) 
