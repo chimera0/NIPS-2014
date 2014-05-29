@@ -49,7 +49,8 @@ class trainer:
             self.pretrain_RNADE()
         print 'Training RNN-RNADE'
         self.optimiser = SGD_mocap(self.model.params,[self.model.v],[self.model.cost,self.model.neg_ll_cost,self.model.l2_cost],
-                                   momentum=self.momentum,patience=self.patience,state=self.state)
+                                   momentum=self.momentum,patience=self.patience,state=self.state,clip_gradients=self.clip_gradients,
+                                   grad_threshold=self.grad_threshold)
         self.optimiser.train(learning_rate=self.learning_rate,num_updates=self.num_updates,save=self.save,output_folder=self.output_folder,
                             lr_update=self.lr_update,update_type=self.update_type,mom_rate=self.mom_rate,start=self.start,batch_size=self.batch_size)
         optimiser = self.optimiser
@@ -79,7 +80,7 @@ class trainer:
         train_frac = 0.8
         train_dataset = Dataset([train_data[0:int(train_frac*total_num)]],100)
         valid_dataset = Dataset([train_data[int(train_frac*total_num):]],100)
-        optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost,rnade.ll_cost,rnade.l2_cost],momentum=True,patience=20)
+        optimiser = SGD_Optimiser(rnade.params,[rnade.v],[rnade.cost,rnade.ll_cost,rnade.l2_cost],momentum=True,patience=20,clip_gradients=self.clip_gradients)
         optimiser.train(train_dataset,valid_set=valid_dataset,learning_rate=learning_rate,num_epochs=5,save=True,
                     lr_update=True,update_type='linear',start=2,output_folder=self.output_folder,filename=filename)
         self.plot_costs(optimiser,fig_title='Pretraining cost',filename='pretraining.png')

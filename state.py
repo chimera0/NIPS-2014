@@ -42,6 +42,8 @@ def get_state():
     state['load_pretrain'] = False
     state['pretrain_folder'] = '/scratch/Sid/RNADE/100-300-2-0.1-0.001/3'
     state['learning_rate_pretrain'] = 0.001
+    state['clip_gradients'] = True
+    state['grad_threshold'] = 50.
     return state
 
 #{1;0:05;0:025;0:0125} Try these for pre-training

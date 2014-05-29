@@ -14,7 +14,8 @@ import copy
 import pdb
 
 class SGD_Optimiser:
-    def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20,custom_grads=False,custom_grad_dict=None,state=None):
+    def __init__(self,params,inputs,costs,updates_old=None,consider_constant=[],momentum=False,patience=20,custom_grads=False,
+                 custom_grad_dict=None,state=None,clip_gradients=False,grad_threshold=50.):
         """
         params: list containing the parameters of the model
         inputs: list of symbolic inputs to the graph
@@ -39,6 +40,8 @@ class SGD_Optimiser:
         assert (isinstance(costs,list)), "The costs given to the SGD class must be a list, even for one element."
         self.updates_old = updates_old
         self.consider_constant = consider_constant
+        self.clip_gradients = clip_gradients
+        self.grad_threshold = grad_threshold
         self.build_train_fn()
         #self.save_model() #saving pre-trained model
         self.state = state
@@ -55,7 +58,10 @@ class SGD_Optimiser:
             for param in self.params:
                 self.gparams.append(self.custom_grad_dict[param.name])
         else:
-            self.gparams = T.grad(self.costs[0],self.params,consider_constant=self.consider_constant)
+            if self.clip_gradients:
+                self.gradient_clipping()
+            else:
+                self.gparams = T.grad(self.costs[0],self.params,consider_constant=self.consider_constant)
         print 'Done calculating gradients.'
 
         if not self.momentum:
@@ -77,6 +83,16 @@ class SGD_Optimiser:
             self.updates_old.update(updates)
 
         self.f = theano.function(self.grad_inputs, self.costs, updates=self.updates_old)
+
+
+    def gradient_clipping(self,threshold=1.):
+        print 'Including Gradient clipping'
+        gparams = T.grad(self.costs[0],self.params,consider_constant=self.consider_constant)
+        self.gparams = []
+        for gparam in gparams:
+            norm_gparam = T.sqrt((gparam**2).sum())
+            clipped_gparam = T.switch(norm_gparam > self.grad_threshold, (self.grad_threshold/norm_gparam) * gparam, gparam)
+            self.gparams.append(clipped_gparam)
 
     def train(self,train_set,valid_set=None,learning_rate=0.1,num_epochs=500,save=False,output_folder=None,lr_update=True,
               mom_rate=0.9,update_type='linear',begin_anneal=50,start=2,filename=None):

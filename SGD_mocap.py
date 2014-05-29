@@ -7,6 +7,7 @@ from SGD import SGD_Optimiser
 from RNN_RNADE import RNN_RNADE
 import mocap_data
 import pdb
+import pickle
 
 class SGD_mocap(SGD_Optimiser):
     def train(self,valid_set=False,learning_rate=0.1,num_updates=500,save=False,output_folder=None,lr_update=None,
@@ -43,14 +44,20 @@ class SGD_mocap(SGD_Optimiser):
                     inputs = [fixed_array] + [self.lr]
                     if self.momentum:
                         inputs = inputs + [self.mom_rate]
-                    cost.append(self.f(*inputs))
-                    mean_costs = numpy.mean(cost,axis=0)
-                    if numpy.isnan(mean_costs[0]):
+                    no_update_cost = self.calc_cost(fixed_array)[0]
+                    if numpy.isnan(no_update_cost):
                         print 'Training cost is NaN.'
                         print 'Breaking from training early, the last saved set of parameters is still usable!'
                         print 'Saving broken model for analysis.'
                         self.save_model('params_NaN.pickle')
+                        print 'Saving input sequence'
+                        path = os.path.join(self.output_folder,'nan_seq.pkl')
+                        pickle.dump(batch_data,open(path,'w'))
                         break
+                    else:
+                        cost.append(self.f(*inputs))
+                        mean_costs = numpy.mean(cost,axis=0)
+                        
                     print '  Update %i   ' %(u+1)
                     print '***Train Results***'
                     for i in xrange(self.num_costs):
@@ -82,9 +89,9 @@ class SGD_mocap(SGD_Optimiser):
                 l2=self.state['l2'],rec_mu=self.state['rec_mu'],rec_mix=self.state['rec_mix'],rec_sigma=self.state['rec_sigma'],load=False,load_dir=self.output_folder)
         #model.params = self.params
         model.load_model(self.output_folder,'best_params_train.pickle')
-        num_test_sequences = 100
+        num_test_sequences = 1
         batch_size = 100
-        num_samples = 10
+        num_samples = 1
         error = []
         for i in xrange(num_test_sequences):
             seq = mocap_data.sample_test_seq(batch_size) 

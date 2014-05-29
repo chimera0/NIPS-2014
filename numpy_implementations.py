@@ -49,6 +49,7 @@ def get_cond_distributions(v_t,model):
 
 
 def RNN_RNADE_fprop(v_t,model):
+    pdb.set_trace()
     u_t,b_alpha_t,b_mu_t,b_sigma_t = get_cond_distributions(v_t,model)
     ll = []
     i = 0
@@ -58,7 +59,7 @@ def RNN_RNADE_fprop(v_t,model):
         log_lik = numpy_rnade(inp,model,b_alpha,b_mu,b_sigma)
         ll.append(log_lik)
         i+=1
-    return numpy.array(ll),u_t,b_alpha_t,b_mu_t,b_sigma_t
+    return numpy.array(ll)#,u_t,b_alpha_t,b_mu_t,b_sigma_t
 
 
 def numpy_rnade(x,model,b_alpha,b_mu,b_sigma):
@@ -70,8 +71,8 @@ def numpy_rnade(x,model,b_alpha,b_mu,b_sigma):
     k = 0.5*np.log(2*np.pi)
     a = 0
     p = 0
-    print 'input vector'
-    print x
+    #print 'input vector'
+    #print x
     for i in xrange(x.shape[0]):
         if i == 0:
             a = W[i] 
@@ -81,34 +82,34 @@ def numpy_rnade(x,model,b_alpha,b_mu,b_sigma):
             tmp = W[i] * x[i-1] 
             a = a + tmp
             x_prev = x[i-1] 
-        print 'x_prev'
-        print x_prev
-        print 'w'
-        print W[i]
-        print 'tmp'
-        print tmp
-        print 'a:'
-        print a
+        #print 'x_prev'
+        #print x_prev
+        #print 'w'
+        #print W[i]
+        #print 'tmp'
+        #print tmp
+        #print 'a:'
+        #print a
         activations = a * activation_rescaling[i]
         h = sigmoid(activations)
-        print 'h:'
-        print h
+        #print 'h:'
+        #print h
         alpha = softmax(numpy.dot(h,V_alpha[i]) + b_alpha[i])
-        print 'alhpa'
-        print alpha
+        #print 'alhpa'
+        #print alpha
         mu = numpy.dot(h,V_mu[i]) + b_mu[i]
-        print 'mu'
-        print mu
+        #print 'mu'
+        #print mu
         sigma = numpy.exp(numpy.dot(h,V_sigma[i]) + b_sigma[i])
-        print 'sigma'
-        print sigma
+        #print 'sigma'
+        #print sigma
         arg = -0.5 * (((mu - x[i]) / sigma)**2) + np.log(alpha) + (-np.log(sigma)-k)
-        print 'arg'
-        print arg
+        #print 'arg'
+        #print arg
         inc = logsumexp(arg)
         p = p + inc
-        print 'p'
-        print p
+        #print 'p'
+        #print p
         #print inc
         #print p
     return p
