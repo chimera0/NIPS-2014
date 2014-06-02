@@ -5,7 +5,6 @@ import theano
 import theano.tensor as T
 from SGD import SGD_Optimiser
 from RNN_RNADE import RNN_RNADE
-import mocap_data
 import bouncing_balls as b
 import pdb
 import pickle
@@ -39,7 +38,7 @@ class SGD_mocap(SGD_Optimiser):
                 if u%1000 == 0:
                     self.valid()
                 else:
-                    batch_data = mocap_data.sample_train_seq(self.batch_size) #Ensure this is a list in the desired form. 
+                    batch_data = b.bounce_vec(15,n=3,T=128) #Ensure this is a list in the desired form. 
                     fixed_array = numpy.zeros(batch_data.shape)
                     fixed_array[:] = batch_data
                     inputs = [fixed_array] + [self.lr]
@@ -95,7 +94,7 @@ class SGD_mocap(SGD_Optimiser):
         num_samples = 1
         error = []
         for i in xrange(num_test_sequences):
-            seq = mocap_data.sample_test_seq(batch_size) 
+            seq = b.bounce_vec(15,n=3,T=128) 
             samples = model.sample_given_sequence(seq,num_samples)
             sq_diff = (samples - seq)**2
             sq_diff = sq_diff.mean(axis=0)

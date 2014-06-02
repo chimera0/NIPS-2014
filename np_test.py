@@ -19,7 +19,7 @@ model = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components,hidden_act='sigmoi
                   load=False,rec_mu=True,rec_mix=False,rec_sigma=False)
 
 load_dir = '/scratch/Sid/RNN_RNADE_2/100-300-10-0.1-0.001/mu'
-model.load_model(load_dir,'best_params_train.pickle')
+model.load_model(None,filename='best_params_train.pickle')
 model.build_RNN_RNADE()
 
 

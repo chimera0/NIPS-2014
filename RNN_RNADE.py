@@ -146,9 +146,13 @@ class RNN_RNADE(Model):
             a = a_prev + T.dot(T.shape_padright(x_prev, 1), T.shape_padleft(w, 1))
             h = self.nonlinearity(a * activation_factor)  # BxH
             Alpha = T.nnet.softmax(T.dot(h, V_alpha) + b_alpha)  # BxC
+            Alpha = theano.printing.Print('Alpha')(Alpha)
             Mu = T.dot(h, V_mu) + b_mu  # BxC
+            Mu = theano.printing.Print('Mu')(Mu)
             Sigma = T.exp(T.dot(h, V_sigma) + b_sigma)  # BxC
+            Sigma = theano.printing.Print('Sigma')(Sigma)
             arg = -constantX(0.5) * T.sqr((Mu - T.shape_padright(x, 1)) / Sigma) - T.log(Sigma) - constantX(0.5 * numpy.log(2 * numpy.pi)) + T.log(Alpha)
+            arg = theano.printing.Print('Mu')(arg)
             p = p_prev + log_sum_exp(arg)
             return (p, a, x)
         # First element is different (it is predicted from the bias only)
@@ -193,7 +197,7 @@ class RNN_RNADE(Model):
         self.log_probs,updates = self.rnade_sym(self.v.T,self.W,self.V_alpha,self.b_alpha_t,self.V_mu,self.b_mu_t,self.V_sigma,self.b_sigma_t,self.activation_rescaling)
         self.neg_ll = self.log_probs*(-1)
         self.neg_ll_cost = T.mean(self.log_probs*(-1)) #Average negative log-likelihood per frame
-        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) + self.l2*T.sum(self.Wu_bmu**2)#Mean is there in order to make cost scalar. Must check this. 
+        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) + self.l2*T.sum(self.V_sigma)#Mean is there in order to make cost scalar. Must check this. 
         self.l2_cost = T.sum(self.W**2)
         print 'Done building graph.'
 

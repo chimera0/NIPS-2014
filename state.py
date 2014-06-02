@@ -23,8 +23,8 @@ def get_state():
     #misc parameters
     state['save'] = True
     state['load'] = False
-    state['output_folder'] = '/scratch/Sid/RNN_RNADE_fast_reg/100-300-1-0.001-0.1/mu-sigma'
-    state['load_dir'] = '/scratch/Sid/RNN_RNADE_fast/test'
+    state['output_folder'] = '/scratch/Sid/RNN_RNADE_alpha_reg/100-300-0.1-0.001/mu-sigma'
+    state['load_dir'] = '/scratch/Sid/RNN_RNADE_lpha_reg/100-300-0.1-0.001/mu-sigma'
     #optimisation parameters
     state['lr_update'] = True
     state['update_type'] = 'linear' #This is essential for the RNADE. Not sure if we need it for the joint model. We can experiment with 'linear' or False
