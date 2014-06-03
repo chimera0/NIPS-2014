@@ -9,7 +9,7 @@ import theano
 import theano.tensor as T 
 import state
 from RNN_RNADE import RNN_RNADE
-from SGD_mocap import SGD_mocap
+from SGD_balls import SGD_balls
 from SGD import SGD_Optimiser
 from RNADE import RNADE
 from state import *
@@ -47,7 +47,7 @@ class trainer:
         if self.pre_train:
             self.pretrain_RNADE()
         print 'Training RNN-RNADE'
-        self.optimiser = SGD_mocap(self.model.params,[self.model.v],[self.model.cost,self.model.neg_ll_cost,self.model.l2_cost],
+        self.optimiser = SGD_balls(self.model.params,[self.model.v],[self.model.cost,self.model.neg_ll_cost,self.model.l2_cost],
                                    momentum=self.momentum,patience=self.patience,state=self.state,clip_gradients=self.clip_gradients,
                                    grad_threshold=self.grad_threshold)
         self.optimiser.train(learning_rate=self.learning_rate,num_updates=self.num_updates,save=self.save,output_folder=self.output_folder,
@@ -151,7 +151,7 @@ class trainer:
             pylab.savefig(filename)        
 
 if __name__ == '__main__':
-    state = get_state()
+    state = get_state_balls()
     # args = sys.argv
     # n_hidden=int(args[1])
     # n_recurrent=int(args[2])

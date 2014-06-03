@@ -9,7 +9,7 @@ import bouncing_balls as b
 import pdb
 import pickle
 
-class SGD_mocap(SGD_Optimiser):
+class SGD_balls(SGD_Optimiser):
     def train(self,valid_set=False,learning_rate=0.1,num_updates=500,save=False,output_folder=None,lr_update=None,
               mom_rate=0.9,update_type='linear',start=2,batch_size=100,filename=None):
         self.best_train_cost = numpy.inf
@@ -35,7 +35,7 @@ class SGD_mocap(SGD_Optimiser):
             cost = []
             for u in xrange(num_updates):
                 #pdb.set_trace()
-                if u%1000 == 0:
+                if u%10 == 0:
                     self.valid()
                 else:
                     batch_data = b.bounce_vec(15,n=3,T=128) #Ensure this is a list in the desired form. 

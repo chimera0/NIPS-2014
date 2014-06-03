@@ -46,6 +46,43 @@ def get_state():
     state['grad_threshold'] = 50.
     return state
 
+
+def get_state_balls():
+    state = {}
+    #model parameters
+    state['n_visible'] = 225
+    state['n_hidden'] = 100 #{20,40,50,70,80,100} Just guessing here, 
+    state['n_recurrent'] = 300 #{40,50,60,80,100} Again guessing
+    state['n_components'] = 1 #{2,5,10,20} From RNADE paper1
+    state['hidden_act'] = 'sigmoid'#'sigmoid'
+    state['l2'] = 0.1 #{2.0;1.0;0.1;0.01;0.001;0} From RNADE paper
+    #misc parameters
+    state['save'] = True
+    state['load'] = False
+    state['output_folder'] = '/scratch/Sid/balls/100-300-0.1-0.001/mu-sigma'
+    state['load_dir'] = '/scratch/Sid/balls/100-300-0.1-0.001/mu-sigma'
+    #optimisation parameters
+    state['lr_update'] = True
+    state['update_type'] = 'linear' #This is essential for the RNADE. Not sure if we need it for the joint model. We can experiment with 'linear' or False
+    state['batch_size'] = 100
+    state['momentum'] = True
+    state['mom_rate'] = 0.9
+    state['patience'] = 20
+    state['learning_rate'] = 0.001  #{0.1,.01,.001,0.0001,0.0005} Guessing. Should try only small values for this.
+    state['num_updates'] = 100000
+    state['start'] = 2 #Iteration at which the lr update should start
+    state['pre_train'] = False #always
+    state['rec_mu'] = True
+    state['rec_mix'] = False
+    state['rec_sigma'] = True
+    state['load_pretrain'] = False
+    state['pretrain_folder'] = '/scratch/Sid/RNADE/100-300-2-0.1-0.001/3'
+    state['learning_rate_pretrain'] = 0.001
+    state['clip_gradients'] = True
+    state['grad_threshold'] = 50.
+    return state
+
+
 #{1;0:05;0:025;0:0125} Try these for pre-training
 
 def create_output_folder(name):
