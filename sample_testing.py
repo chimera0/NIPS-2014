@@ -3,31 +3,40 @@ import theano
 from RNADE import *
 from RNN_RNADE import RNN_RNADE
 import mocap_data
+import bouncing_balls as b
 import pdb
 from numpy_implementations import *
 
 #model params
-n_hidden = 50
-n_recurrent = 100
-n_visible = 49
-n_components = 10
+n_hidden = 200
+n_recurrent = 300
+n_visible = 225
+n_components = 1
 hidden_act = 'sigmoid'
 
 model = RNN_RNADE(n_visible,n_hidden,n_recurrent,n_components,hidden_act='sigmoid',
                   load=False,rec_mu=True,rec_mix=False,rec_sigma=False)
 
-load_dir = '/scratch/Sid/RNN_RNADE_2/100-300-10-0.1-0.001/mu'
+load_dir = '/scratch/Sid/balls/200-300-1-0.1-0.001/mu/'
 model.load_model(load_dir,'best_params_train.pickle')
 model.build_RNN_RNADE()
 
 batch_size = 100
 num_samples = 1
-seq = mocap_data.sample_train_seq(batch_size)
+seq = b.bounce_vec(15,n=3,T=128)
 new_seq = numpy.zeros(seq.shape)
 new_seq[:] = seq
 
-ll = RNN_RNADE_fprop(new_seq,model)
+#samples = model.sample_given_sequence(new_seq,1)
+#samples = numpy.minimum(samples,1.)
+#samples = numpy.maximum(samples,0.)
+#pdb.set_trace()
+
+temp = model.seq_completion(new_seq)
 pdb.set_trace()
+
+#ll = RNN_RNADE_fprop(new_seq,model)
+#pdb.set_trace()
 
 #new_seq = list(new_seq)
 

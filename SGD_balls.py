@@ -96,6 +96,9 @@ class SGD_balls(SGD_Optimiser):
         for i in xrange(num_test_sequences):
             seq = b.bounce_vec(15,n=3,T=128) 
             samples = model.sample_given_sequence(seq,num_samples)
+            #make sure samples are between 0 and 1
+            samples = numpy.minimum(samples,1.)
+            samples = numpy.maximum(samples,0.)
             sq_diff = (samples - seq)**2
             sq_diff = sq_diff.mean(axis=0)
             sq_diff = sq_diff.sum(axis=1)

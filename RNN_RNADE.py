@@ -104,35 +104,39 @@ class RNN_RNADE(Model):
         if self.load:
             self.load_model(self.load_dir)
 
+    
+    def one_step(self,v_t,u_tm1):
+        if self.rec_mix:
+            b_alpha = self.b_alpha.get_value().flatten() + numpy.dot(u_tm1,self.Wu_balpha.get_value())
+        else:
+            b_alpha = self.b_alpha.get_value().flatten()
+        if self.rec_mu:
+            b_mu = self.b_mu.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bmu.get_value())
+        else:
+            b_mu = self.b_mu.get_value().flatten()
+        if self.rec_sigma:
+            b_sigma = self.b_sigma.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bsigma.get_value())
+        else:
+            b_sigma = self.b_sigma.get_value().flatten()
+        u = numpy.tanh(self.bu.get_value() + numpy.dot(v_t,self.Wvu.get_value()) + numpy.dot(u_tm1,self.Wuu.get_value()))
+        return u,b_alpha,b_mu,b_sigma
+
+
+
     def get_cond_distributions(self,v_t):
-        def one_step(v_t,u_tm1):
-            if self.rec_mix:
-                b_alpha = self.b_alpha.get_value().flatten() + numpy.dot(u_tm1,self.Wu_balpha.get_value())
-            else:
-                b_alpha = self.b_alpha.get_value().flatten()
-            if self.rec_mu:
-                b_mu = self.b_mu.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bmu.get_value())
-            else:
-                b_mu = self.b_mu.get_value().flatten()
-            if self.rec_sigma:
-                b_sigma = self.b_sigma.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bsigma.get_value())
-            else:
-                b_sigma = self.b_sigma.get_value().flatten()
-            u = numpy.tanh(self.bu.get_value() + numpy.dot(v_t,self.Wvu.get_value()) + numpy.dot(u_tm1,self.Wuu.get_value()))
-            return u,b_alpha,b_mu,b_sigma
         u_t = []
         b_alpha_t = []
         b_mu_t = []
         b_sigma_t = []
         for i in xrange(v_t.shape[0]):
             if i==0:
-                u,b_alpha,b_mu,b_sigma = one_step(v_t[i],self.u0.get_value())
+                u,b_alpha,b_mu,b_sigma = self.one_step(v_t[i],self.u0.get_value())
                 u_t.append(u)
                 b_alpha_t.append(b_alpha)
                 b_mu_t.append(b_mu)
                 b_sigma_t.append(b_sigma)
             else:
-                u,b_alpha,b_mu,b_sigma = one_step(v_t[i],u_t[-1])
+                u,b_alpha,b_mu,b_sigma = self.one_step(v_t[i],u_t[-1])
                 u_t.append(u)
                 b_alpha_t.append(b_alpha)
                 b_mu_t.append(b_mu)
@@ -146,13 +150,13 @@ class RNN_RNADE(Model):
             a = a_prev + T.dot(T.shape_padright(x_prev, 1), T.shape_padleft(w, 1))
             h = self.nonlinearity(a * activation_factor)  # BxH
             Alpha = T.nnet.softmax(T.dot(h, V_alpha) + b_alpha)  # BxC
-            Alpha = theano.printing.Print('Alpha')(Alpha)
+            #Alpha = theano.printing.Print('Alpha')(Alpha)
             Mu = T.dot(h, V_mu) + b_mu  # BxC
-            Mu = theano.printing.Print('Mu')(Mu)
+            #Mu = theano.printing.Print('Mu')(Mu)
             Sigma = T.exp(T.dot(h, V_sigma) + b_sigma)  # BxC
-            Sigma = theano.printing.Print('Sigma')(Sigma)
+            #Sigma = theano.printing.Print('Sigma')(Sigma)
             arg = -constantX(0.5) * T.sqr((Mu - T.shape_padright(x, 1)) / Sigma) - T.log(Sigma) - constantX(0.5 * numpy.log(2 * numpy.pi)) + T.log(Alpha)
-            arg = theano.printing.Print('Mu')(arg)
+            #arg = theano.printing.Print('Mu')(arg)
             p = p_prev + log_sum_exp(arg)
             return (p, a, x)
         # First element is different (it is predicted from the bias only)
@@ -197,8 +201,8 @@ class RNN_RNADE(Model):
         self.log_probs,updates = self.rnade_sym(self.v.T,self.W,self.V_alpha,self.b_alpha_t,self.V_mu,self.b_mu_t,self.V_sigma,self.b_sigma_t,self.activation_rescaling)
         self.neg_ll = self.log_probs*(-1)
         self.neg_ll_cost = T.mean(self.log_probs*(-1)) #Average negative log-likelihood per frame
-        self.cost = T.mean(self.neg_ll) + self.l2*T.sum(self.W**2) + self.l2*T.sum(self.V_sigma)#Mean is there in order to make cost scalar. Must check this. 
-        self.l2_cost = T.sum(self.W**2)
+        self.cost = T.mean(self.log_probs*(-1)) + self.l2*T.sum(self.W**2) + self.l2*T.sum(self.V_mu**2) + self.l2*T.sum(self.V_sigma**2)#Mean is there in order to make cost scalar. Must check this. 
+        self.l2_cost = self.cost - self.neg_ll_cost
         print 'Done building graph.'
 
     def build_two(self,):
@@ -258,6 +262,45 @@ class RNN_RNADE(Model):
             
             all_sequences.append(sequence)
         return numpy.array(all_sequences)
+
+    def predict_distribution(self,u_tm1):
+        if self.rec_mix:
+            b_alpha = self.b_alpha.get_value().flatten() + numpy.dot(u_tm1,self.Wu_balpha.get_value())
+        else:
+            b_alpha = self.b_alpha.get_value().flatten()
+        if self.rec_mu:
+            b_mu = self.b_mu.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bmu.get_value())
+        else:
+            b_mu = self.b_mu.get_value().flatten()
+        if self.rec_sigma:
+            b_sigma = self.b_sigma.get_value().flatten() + numpy.dot(u_tm1,self.Wu_bsigma.get_value())
+        else:
+            b_sigma = self.b_sigma.get_value().flatten()
+        #Make sure everything has the right shape
+        if b_alpha.ndim > 1:
+            b_alpha = b_alpha.reshape(b_alpha.shape[-1])
+        if b_mu.ndim > 1:
+            b_mu = b_mu.reshape(b_mu.shape[-1])
+        if b_sigma.ndim > 1:
+            b_sigma = b_sigma.reshape(b_sigma.shape[-1])
+        return b_alpha,b_mu,b_sigma
+
+    def seq_completion(self,init_seq,seq_length=100):
+        new_seq = []
+        u = []
+        u_t,b_alpha_t,b_mu_t,b_sigma_t = self.get_cond_distributions(init_seq)
+        b_alpha_tp1,b_mu_tp1,b_sigma_tp1 = self.predict_distribution(u_t[-1])
+        v = self.sample_RNADE(b_alpha_tp1,b_mu_tp1,b_sigma_tp1,1)
+        new_seq.append(v) 
+        u.append(numpy.tanh(self.bu.get_value() + numpy.dot(v,self.Wvu.get_value()) + numpy.dot(u_t[-1],self.Wuu.get_value())))
+        for i in xrange(seq_length-1):
+            b_alpha_tp1,b_mu_tp1,b_sigma_tp1 = self.predict_distribution(u[-1])
+            v = self.sample_RNADE(b_alpha_tp1,b_mu_tp1,b_sigma_tp1,1)
+            new_seq.append(v) 
+            u.append(numpy.tanh(self.bu.get_value() + numpy.dot(v,self.Wvu.get_value()) + numpy.dot(u_t[-1],self.Wuu.get_value())))
+        new_seq = numpy.array(new_seq)
+        new_seq = new_seq.reshape((new_seq.shape[0],new_seq.shape[-1]))
+        return new_seq
 
 if __name__ == '__main__':
     n_visible = 49

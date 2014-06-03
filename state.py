@@ -51,7 +51,7 @@ def get_state_balls():
     state = {}
     #model parameters
     state['n_visible'] = 225
-    state['n_hidden'] = 100 #{20,40,50,70,80,100} Just guessing here, 
+    state['n_hidden'] = 200 #{20,40,50,70,80,100} Just guessing here, 
     state['n_recurrent'] = 300 #{40,50,60,80,100} Again guessing
     state['n_components'] = 1 #{2,5,10,20} From RNADE paper1
     state['hidden_act'] = 'sigmoid'#'sigmoid'
@@ -59,8 +59,8 @@ def get_state_balls():
     #misc parameters
     state['save'] = True
     state['load'] = False
-    state['output_folder'] = '/scratch/Sid/balls/100-300-0.1-0.001/mu-sigma'
-    state['load_dir'] = '/scratch/Sid/balls/100-300-0.1-0.001/mu-sigma'
+    state['output_folder'] = '/scratch/Sid/balls_norm/200-300-1-.1-0.001/mu-sigma'
+    state['load_dir'] = '/scratch/Sid/balls_norm/200-300-1-.1-0.001/mu-sigma'
     #optimisation parameters
     state['lr_update'] = True
     state['update_type'] = 'linear' #This is essential for the RNADE. Not sure if we need it for the joint model. We can experiment with 'linear' or False
